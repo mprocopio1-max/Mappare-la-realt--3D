@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mappare la realtà</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* palette taken from the 2D map */
+  --paper:#FBFBF9; --ink:#141414; --ink2:#2A2A2A; --g1:#6B6B6B; --g2:#9A9A9A; --rule:#D6D6D6;
+  --gaza:#F2D13A; --view:#FF272B; --proj:#26FF00;
+  --mono:'IBM Plex Mono', ui-monospace, monospace; --sans:'Inter', system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);overflow:hidden}
+#scene,#labels{position:fixed;inset:0}
+#labels{pointer-events:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button:focus-visible{outline:1.5px solid var(--ink);outline-offset:3px}
+
+#title{position:fixed;top:26px;left:30px;pointer-events:none}
+#title h1{margin:0;font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.16em}
+#title p{margin:6px 0 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--g1)}
+#north{position:fixed;top:24px;right:30px;font-family:var(--mono);font-size:11px;font-weight:600;text-align:center;line-height:1;pointer-events:none}
+#north svg{display:block;margin:0 auto 3px}
+
+#bar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:var(--paper);border:1px solid var(--ink);padding:3px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+#bar button{padding:7px 11px}
+#bar button:hover{background:#efefec}
+#bar button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+#bar .sep{width:1px;align-self:stretch;background:var(--rule);margin:3px 4px}
+#explode{font-weight:600}
+
+#legend{position:fixed;right:30px;bottom:24px;border:1px solid var(--ink);background:var(--paper);padding:9px 12px 10px;font-family:var(--mono);font-size:10px;display:flex;flex-direction:column;gap:6px;min-width:250px}
+#legend b{font-weight:700;letter-spacing:.1em;font-size:9.5px}
+#legend button{display:flex;align-items:center;gap:9px;text-align:left;transition:opacity .2s}
+#legend button[aria-pressed="false"]{opacity:.3}
+#legend svg{flex:none}
+
+#hint{position:fixed;left:30px;bottom:26px;font-family:var(--mono);font-size:10px;color:var(--g1);letter-spacing:.04em;line-height:1.6;pointer-events:none}
+
+.era{background:var(--paper);padding:0 8px;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--ink);white-space:nowrap;transition:opacity .4s}
+.band{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.2em;color:var(--ink);white-space:nowrap;transition:opacity .4s}
+
+#lightbox{position:fixed;inset:0;background:rgba(251,251,249,.94);display:none;align-items:center;justify-content:center;padding:40px;z-index:10;cursor:zoom-out}
+#lightbox.on{display:flex}
+#lightbox img{max-width:min(90vw,1100px);max-height:84vh;border:1px solid var(--ink)}
+
+#loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--g1);background:var(--paper);transition:opacity .6s;z-index:20}
+
+@media (max-width:820px){
+  #legend,#hint{display:none}
+  #bar{bottom:16px;font-size:9.5px}
+  #bar button{padding:7px 8px}
+}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="scene" aria-label="Mappa 3D: trascina per ruotare, rotella per lo zoom"></div>
+<div id="labels"></div>
+
+<div id="north" aria-hidden="true"><svg width="12" height="16" viewBox="0 0 12 16"><path d="M6 0 L12 16 L6 12 L0 16 Z" fill="#141414"/></svg>N</div>
+
+
+<div id="legend" aria-label="Legenda, clicca per mostrare o nascondere i fili">
+  <b>LEGENDA</b>
+  <button data-thread="gaza" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#F2D13A" stroke-width="3"/><circle cx="4" cy="4" r="3" fill="#F2D13A" stroke="#141414"/><circle cx="30" cy="4" r="3" fill="#F2D13A" stroke="#141414"/></svg>Filo del caso studio, verso Gaza 2023–2026</button>
+  <button data-thread="view" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#FF272B" stroke-width="1.5"/></svg>Sguardo dall'alto: dalla foto aerea a Street View</button>
+  <button data-thread="proj" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#26FF00" stroke-width="1.5" stroke-dasharray="4 3"/></svg>Proiezioni: da Mercatore a Correct the Map</button>
+</div>
+
+
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Immagine"><img id="lbImg" alt=""></div>
+<div id="loader">CARICAMENTO DELLA MAPPA…</div>
+
+<script id="data" type="application/json">{"img2card": {"i01": "card_33", "i02": "card_13", "i03": "card_19", "i04": "card_4", "i05": "card", "i06": "card", "i07": "card_5", "i08": "card_9", "i09": "card_2", "i10": "card_2", "i11": "card_33", "i12": "card_3", "i13": "card", "i14": "card_10", "i15": "card_10", "i16": "card_17", "i17": "card_16", "i18": "card_28", "i19": "card_20", "i20": "card_14", "i21": "card_22", "i22": "card_21", "i23": "card_22", "i24": "card_22", "i25": "card_28", "i26": "card_23", "i27": "card_23", "i28": "card_29", "i29": "card_31", "i30": "card_7", "i31": "card_7", "i32": "card_33", "i33": "new_farocki", "i34": "card_36", "i35": "card_30", "i36": "card_35", "i37": "card_7", "i38": "card_23", "i39": "card_23", "i40": "card_32", "i41": "card_11"}, "cards": [{"id": "card", "date": "1855–1918", "title": "Fotografia aerea, seconda metà dell’Ottocento – Prima guerra mondiale", "body": "La fotografia aerea introduce uno sguardo verticale sul territorio, prima con palloni aerostatici e poi con uso sistematico nella ricognizione militare durante la Prima guerra mondiale.", "x": 605.4, "y": 260.4, "w": 209.8, "h": 140.0}, {"id": "card_2", "date": "1569", "title": "Proiezione di Mercatore", "body": "La proiezione di Mercatore conserva gli angoli, ma deforma le superfici, mostrando come una tecnologia possa diventare una rappresentazione generale del mondo.", "x": 300.4, "y": 121.4, "w": 188.3, "h": 114.0}, {"id": "card_3", "date": "Dal XV secolo", "title": "Espansione europea", "body": "L’espansione marittima europea crea una forte domanda di strumenti cartografici più precisi, legando navigazione, commercio, conquista e cartografia.", "x": 202.4, "y": 513.4, "w": 191.9, "h": 101.4}, {"id": "card_4", "date": "1884–1885", "title": "Conferenza di Berlino", "body": "La Conferenza di Berlino stabilisce regole coloniali senza la partecipazione delle popolazioni africane, mostrando come una linea cartografica possa diventare confine politico.", "x": 149.4, "y": 713.4, "w": 187.0, "h": 114.0}, {"id": "card_5", "date": "XVII–XIX secolo", "title": "Cartografia degli Stati moderni", "body": "La mappa diventa strumento per rendere il territorio leggibile e amministrabile, mostrando che rappresentare significa anche rendere governabile.", "x": 383.3, "y": 713.3, "w": 158.3, "h": 127.0}, {"id": "card_6", "date": "1947–1948", "title": "Partizione della Palestina", "body": "Il periodo tra il piano di partizione e gli eventi del 1948 mostra come linee, confini e trasformazioni territoriali abbiano conseguenze sulla vita delle persone e sulla memoria dei luoghi.", "x": 1028.4, "y": 1071.4, "w": 195.3, "h": 114.0}, {"id": "card_7", "date": "1939–1945", "title": "WWII", "body": null, "x": 806.4, "y": 1111.4, "w": 195.3, "h": 45}, {"id": "card_8", "date": "Anni Sessanta e Settanta", "title": "Decolonizzazione", "body": "Le indipendenze africane e asiatiche modificano l’ordine geopolitico mondiale e cresce la critica verso rappresentazioni considerate eurocentriche.", "x": 1485.4, "y": 978.4, "w": 181.3, "h": 114.0}, {"id": "card_9", "date": "1957", "title": "Sputnik 1", "body": "Sputnik 1 segna l’inizio dell’era spaziale e introduce uno sguardo orbitale, rendendo la Terra osservabile letteralmente dall’esterno.", "x": 1089.3, "y": 298.3, "w": 192.5, "h": 101.4}, {"id": "card_10", "date": "1968–1972", "title": "Earthrise e Blue Marble", "body": "Le fotografie della Terra realizzate dalle missioni Apollo trasformano l’immaginario collettivo, mostrando il pianeta come un unico sistema osservabile dall’esterno.", "x": 1361.3, "y": 382.3, "w": 215.3, "h": 101.4}, {"id": "card_11", "date": "1972", "title": "Landsat 1", "body": "Landsat 1 introduce la possibilità di osservare sistematicamente la superficie terrestre nel tempo, rendendo visibile la trasformazione del territorio.", "x": 1445.3, "y": 609.3, "w": 179.5, "h": 114.0}, {"id": "card_12", "date": "2004", "title": "OpenStreetMap", "body": "OpenStreetMap introduce il mapping collaborativo, consentendo a comunità distribuite di cittadini di partecipare alla costruzione di informazioni geografiche.", "x": 1829.4, "y": 385.4, "w": 216.1, "h": 101.4}, {"id": "card_13", "date": "2020", "title": "Pandemia COVID-19", "body": "Mappe e dashboard per monitorare l’andamento della pandemia", "x": 2055.4, "y": 122.4, "w": 216.1, "h": 76.2}, {"id": "card_14", "date": "2024–2026", "title": "Forensic Architecture", "body": "Forensic Architecture utilizza immagini satellitari, geolocalizzazione e database spaziali per ricostruire eventi, trasformando la mappa in strumento di investigazione.", "x": 2102.4, "y": 377.4, "w": 216.1, "h": 101.4}, {"id": "card_15", "date": "Anni Sessanta", "title": "Nascita del GIS", "body": "Il Geographic Information System trasforma la mappa in un database composto da livelli informativi separati, interrogabili e combinabili.", "x": 1174.3, "y": 533.4, "w": 197.3, "h": 101.4}, {"id": "card_16", "date": "1963", "title": "Proiezione Robinson", "body": "La Robinson introduce il concetto di compromesso cartografico, privilegiando una rappresentazione complessivamente equilibrata e visivamente leggibile.", "x": 994.3, "y": 842.3, "w": 210.4, "h": 101.4}, {"id": "card_17", "date": "Dagli anni Sessanta", "title": "La mappa come sistema di layers", "body": "Con il GIS la mappa può essere composta da diversi livelli informativi accesi, spenti e sovrapposti, modificando il concetto di rappresentazione cartografica.", "x": 1159.3, "y": 703.3, "w": 182.3, "h": 127.0}, {"id": "card_18", "date": "2005", "title": "Google Maps e Google Earth", "body": "Google Maps e Google Earth rendono la cartografia digitale interattiva accessibile a un pubblico globale, unendo vista satellitare, navigazione e database.", "x": 1908.4, "y": 528.4, "w": 216.1, "h": 101.4}, {"id": "card_19", "date": "2018", "title": "Equal Earth", "body": "Equal Earth conserva le proporzioni relative delle superfici e cerca di mantenere una forma complessiva più leggibile rispetto a proiezioni come Gall-Peters.", "x": 1890.3, "y": 770.3, "w": 222.3, "h": 101.4}, {"id": "card_20", "date": "2018", "title": "Palestine Open Maps", "body": "Palestine Open Maps utilizza mappe storiche della Palestina per creare un archivio temporale confrontabile con la cartografia contemporanea.", "x": 2067.3, "y": 709.3, "w": 191.4, "h": 101.4}, {"id": "card_21", "date": "2007", "title": "Google Street View", "body": "Street View simula il punto di vista di una persona che si muove nella strada, rendendo la mappa un ambiente digitale percorribile.", "x": 1873.4, "y": 231.4, "w": 216.1, "h": 88.8}, {"id": "card_22", "date": "Dagli anni Settanta agli anni Novanta", "title": "GPS", "body": "Il Global Positioning System cambia il rapporto tra individuo e mappa, rendendo la rappresentazione situata, personale e dinamica.", "x": 1607.4, "y": 449.4, "w": 216.1, "h": 101.4}, {"id": "card_23", "date": "1947–1991", "title": "Guerra Fredda", "body": "La Guerra Fredda sviluppa tecnologie centrali per la cartografia contemporanea, mostrando il carattere dual-use delle tecnologie militari e civili.", "x": 1250.4, "y": 1071.4, "w": 208.2, "h": 101.4}, {"id": "card_24", "date": "2026", "title": "ONU, Correct the Map", "body": "L’ONU invita a utilizzare proiezioni che rappresentino in modo più accurato le dimensioni relative dei continenti, riconoscendo la scelta della proiezione come questione educativa, culturale e politica.", "x": 2125.3, "y": 838.3, "w": 210.0, "h": 114.0}, {"id": "card_25", "date": null, "title": "Spazio vissuto e memoria", "body": "Un luogo vissuto contiene memoria, esperienza, identità e relazioni, mostrando che la mappa può essere uno strumento per spazializzare la memoria.", "x": 990.4, "y": 1438.4, "w": 263.6, "h": 74.8}, {"id": "card_26", "date": null, "title": "Platform Geography", "body": "Le mappe cominciano a influenzare direttamente le decisioni quotidiane, partecipando alle scelte di percorso, consumo e orientamento nello spazio.", "x": 1391.4, "y": 1438.4, "w": 263.6, "h": 74.8}, {"id": "card_27", "date": null, "title": "Temporal Dislocation", "body": "Le mappe digitali producono uno scarto tra tempo della rappresentazione e tempo reale, rendendo evidente la distanza tra interazione, immagine e territorio fisico.", "x": 2052.4, "y": 1438.4, "w": 263.6, "h": 74.8}, {"id": "card_28", "date": "1855 e anni Settanta", "title": "Gall e Gall-Peters", "body": "La Gall-Peters conserva le proporzioni delle superfici, ma deforma le forme dei continenti, assumendo significati diversi in contesti storici differenti.", "x": 453.4, "y": 939.4, "w": 211.3, "h": 101.4}, {"id": "card_29", "date": "11 settembre 2001", "title": "Geospatial intelligence", "body": "L’11 settembre accelera lo sviluppo delle tecnologie di sorveglianza e intelligence geografica, aumentando l’importanza di immagini satellitari e droni.", "x": 1693.3, "y": 1091.2, "w": 182.3, "h": 114.0}, {"id": "card_30", "date": "Anni Duemila a oggi", "title": "Counter-mapping", "body": "Pratiche di counter-mapping utilizzano strumenti cartografici per produrre rappresentazioni alternative, mostrando che la cartografia è un campo nel quale il potere può essere negoziato e contestato.", "x": 1981.3, "y": 1156.3, "w": 179.3, "h": 126.6}, {"id": "card_31", "date": "2023–2026", "title": "Gaza", "body": "Gaza rappresenta il punto in cui convergono tecnologia, rappresentazione, politica e percezione, mostrando la coesistenza di versioni differenti dello stesso luogo.", "x": 2125.3, "y": 1035.3, "w": 210.3, "h": 101.4}, {"id": "card_32", "date": "Anni Duemila", "title": "Dallo Stato alla piattaforma", "body": "Aziende tecnologiche private diventano intermediari fondamentali tra territorio e utente, sollevando domande su chi possiede i dati e chi decide cosa viene mostrato.", "x": 1830.3, "y": 963.3, "w": 179.3, "h": 127.0}, {"id": "card_33", "date": "1914–1918", "title": "WWI", "body": null, "x": 584.4, "y": 1129.4, "w": 195.3, "h": 45}, {"id": "card_34", "date": null, "title": "Mental Geography", "body": "La geografia mentale è un processo di lunga durata che interiorizza una rappresentazione del mondo attraverso atlanti, scuole, media e piattaforme digitali.", "x": 204.4, "y": 1438.4, "w": 263.6, "h": 74.8}, {"id": "card_35", "date": null, "title": "The Aerial Gaze", "body": "La fotografia aerea e il satellite introducono uno sguardo verticale che diventa progressivamente normale, influenzando il modo in cui osserviamo città e territori.", "x": 565.4, "y": 1438.4, "w": 263.6, "h": 74.8}, {"id": "card_36", "date": null, "title": "Mediated Presence, Street View", "body": "Street View permette di esplorare un luogo senza essere fisicamente presenti, producendo una forma di presenza mediata che precede l’esperienza fisica del territorio.", "x": 1709.4, "y": 1438.4, "w": 263.6, "h": 74.8}, {"id": "new_kba", "date": "1997 · 2020", "title": "Kyl-Bingaman Amendment", "body": "Una legge statunitense limita a 2 metri la risoluzione delle immagini satellitari di Israele e dei Territori palestinesi: per oltre vent’anni Gaza appare sfocata su Google Earth. Nel 2020 il limite scende a 40 cm, perché fornitori non americani come Airbus vendevano già immagini più nitide.", "x": 1474, "y": 1104, "w": 188, "h": 164.8}, {"id": "new_gulf", "date": "1991", "title": "Guerra del Golfo", "body": "La prima guerra combattuta con GPS e immagini satellitari arriva in TV come un videogioco: riprese dall’alto, mirini, nessun corpo. Jean Baudrillard pubblica La guerra del Golfo non ha avuto luogo.", "x": 1384, "y": 1281, "w": 188, "h": 114.0}, {"id": "new_nimbus", "date": "2021 · 2024", "title": "Project Nimbus", "body": "Google e Amazon firmano un contratto da 1,2 miliardi di dollari per fornire cloud e AI al governo e all’esercito israeliano. Nel 2024 Google licenzia 28 dipendenti che protestano con No Tech for Apartheid. Chi mappa le macerie è implicato in ciò che le produce.", "x": 1756, "y": 1228, "w": 188, "h": 139.2}, {"id": "new_traffic", "date": "Ottobre 2023", "title": "Google e Apple spengono il traffico live", "body": "Su richiesta dell’esercito israeliano, Google Maps, Waze e Apple Maps disattivano i dati sul traffico in tempo reale in Israele e a Gaza, come già in Ucraina nel 2022. La piattaforma modifica la mappa per ragioni militari.", "x": 1690, "y": 810, "w": 188, "h": 139.6}, {"id": "new_lavender", "date": "Novembre 2023 · aprile 2024", "title": "The Gospel e Lavender", "body": "Le inchieste di +972 Magazine e Local Call rivelano sistemi di AI che generano bersagli a Gaza: The Gospel per gli edifici, Lavender per le persone. La mappa diventa una lista di obiettivi.", "x": 2056, "y": 1300, "w": 188, "h": 114.0}, {"id": "new_farocki", "date": "1944 · 1988", "title": "Harun Farocki, le foto aeree di Auschwitz", "body": "Le ricognizioni alleate fotografano Auschwitz nel 1944 senza riconoscerlo: le immagini vengono lette solo nel 1979. Farocki ne fa il film Immagini del mondo e iscrizione della guerra. Un’immagine può esistere senza mostrare.", "x": 736, "y": 1191, "w": 188, "h": 139.6}], "threads": {"gaza": ["card_6", "card_11", "card_22", "new_kba", "card_18", "card_32", "card_30", "card_20", "new_nimbus", "new_traffic", "new_lavender", "card_14", "card_31"], "view": ["card", "new_farocki", "card_9", "card_10", "card_11", "new_gulf", "card_18", "card_21"], "proj": ["card_2", "card_28", "card_16", "card_19", "card_24"]}, "concept": ["card_25", "card_26", "card_27", "card_34", "card_35", "card_36"], "images": [{"id": "i01", "file": "img/i01.jpg", "x": 885.0, "y": 1188.0, "w": 233.0, "h": 232.0}, {"id": "i02", "file": "img/i02.jpg", "x": 2046.0, "y": 177.0, "w": 311.0, "h": 210.0}, {"id": "i03", "file": "img/i03.jpg", "x": 1611.0, "y": 603.0, "w": 385.0, "h": 201.0}, {"id": "i04", "file": "img/i04.jpg", "x": 70.0, "y": 663.0, "w": 202.0, "h": 271.0}, {"id": "i05", "file": "img/i05.jpg", "x": 907.0, "y": 100.0, "w": 366.0, "h": 208.0}, {"id": "i06", "file": "img/i06.jpg", "x": 465.0, "y": 65.0, "w": 379.0, "h": 250.0}, {"id": "i07", "file": "img/i07.jpg", "x": 363.0, "y": 549.0, "w": 250.0, "h": 195.0}, {"id": "i08", "file": "img/i08.jpg", "x": 1155.0, "y": 164.0, "w": 174.0, "h": 174.0}, {"id": "i09", "file": "img/i09.jpg", "x": 132.0, "y": 220.0, "w": 239.0, "h": 202.0}, {"id": "i10", "file": "img/i10.jpg", "x": 298.0, "y": 312.0, "w": 298.0, "h": 162.0}, {"id": "i11", "file": "img/i11.jpg", "x": 832.3, "y": 264.0, "w": 153.9, "h": 247.9}, {"id": "i12", "file": "img/i12.jpg", "x": 75.0, "y": 408.0, "w": 234.0, "h": 132.0}, {"id": "i13", "file": "img/i13.jpg", "x": 724.0, "y": 420.2, "w": 216.0, "h": 159.8}, {"id": "i14", "file": "img/i14.jpg", "x": 1324.0, "y": 164.0, "w": 234.0, "h": 234.0}, {"id": "i15", "file": "img/i15.jpg", "x": 1499.0, "y": 224.0, "w": 194.0, "h": 194.0}, {"id": "i16", "file": "img/i16.jpg", "x": 1212.0, "y": 406.0, "w": 157.0, "h": 127.0}, {"id": "i17", "file": "img/i17.jpg", "x": 695.0, "y": 616.0, "w": 491.0, "h": 243.0}, {"id": "i18", "file": "img/i18.jpg", "x": 519.0, "y": 748.0, "w": 285.0, "h": 203.0}, {"id": "i19", "file": "img/i19.jpg", "x": 2090.0, "y": 610.0, "w": 310.0, "h": 231.0}, {"id": "i20", "file": "img/i20.jpg", "x": 2223.0, "y": 513.0, "w": 164.0, "h": 142.0}, {"id": "i21", "file": "img/i21.jpg", "x": 980.0, "y": 420.0, "w": 130.0, "h": 128.0}, {"id": "i22", "file": "img/i22.jpg", "x": 1824.0, "y": 73.0, "w": 231.0, "h": 170.0}, {"id": "i23", "file": "img/i23.jpg", "x": 1700.0, "y": 297.0, "w": 122.0, "h": 158.0}, {"id": "i24", "file": "img/i24.jpg", "x": 1779.0, "y": 302.0, "w": 130.0, "h": 91.0}, {"id": "i25", "file": "img/i25.jpg", "x": 167.0, "y": 903.0, "w": 296.0, "h": 217.0}, {"id": "i26", "file": "img/i26.jpg", "x": 1185.0, "y": 1324.0, "w": 190.0, "h": 127.0}, {"id": "i27", "file": "img/i27.jpg", "x": 1319.0, "y": 1233.0, "w": 227.0, "h": 131.0}, {"id": "i28", "file": "img/i28.jpg", "x": 1555.0, "y": 1168.0, "w": 180.0, "h": 261.0}, {"id": "i29", "file": "img/i29.jpg", "x": 2131.0, "y": 1130.0, "w": 253.0, "h": 206.0}, {"id": "i30", "file": "img/i30.jpg", "x": 132.0, "y": 1100.0, "w": 178.0, "h": 261.0}, {"id": "i31", "file": "img/i31.jpg", "x": 479.0, "y": 1178.0, "w": 238.0, "h": 222.0}, {"id": "i32", "file": "img/i32.jpg", "x": 355.0, "y": 1080.0, "w": 164.0, "h": 230.0}, {"id": "i33", "file": "img/i33.jpg", "x": 709.0, "y": 1265.0, "w": 201.0, "h": 265.0}, {"id": "i34", "file": "img/i34.jpg", "x": 1897.0, "y": 1314.0, "w": 156.0, "h": 156.0}, {"id": "i35", "file": "img/i35.jpg", "x": 1865.0, "y": 1050.0, "w": 268.0, "h": 160.0}, {"id": "i36", "file": "img/i36.jpg", "x": 403.0, "y": 1347.0, "w": 209.0, "h": 205.0}, {"id": "i37", "file": "img/i37.jpg", "x": 673.0, "y": 977.0, "w": 146.0, "h": 190.0}, {"id": "i38", "file": "img/i38.jpg", "x": 827.0, "y": 889.0, "w": 178.0, "h": 276.0}, {"id": "i39", "file": "img/i39.jpg", "x": 1209.0, "y": 899.0, "w": 260.0, "h": 189.0}, {"id": "i40", "file": "img/i40.jpg", "x": 1652.0, "y": 825.0, "w": 275.0, "h": 185.0}, {"id": "i41", "file": "img/i41.png", "x": 1276.0, "y": 510.0, "w": 366.0, "h": 205.0}]}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const D = JSON.parse(document.getElementById('data').textContent);
+const MW = 2384, MH = 1684, CX = 1185, CY = 841;
+const FX0 = 65, FX1 = 2305;
+const ERAS = [[65, 508, '1492 – 1850'], [508, 926, '1850 – 1945'], [926, 1354, '1945 – 1968'], [1354, 2305, '1968 – 2026']];
+const BANDS = [[56, 690, 'TECNOLOGIA'], [690, 1071, 'RAPPRESENTAZIONE'], [1071, 1429, 'POLITICA'], [1429, 1626, 'CULTURA']];
+const C = { paper: 0xFBFBF9, ink: '#141414', ink2: '#2A2A2A', g1: '#6B6B6B', gaza: '#F2D13A', view: '#FF272B', proj: '#26FF00' };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const bandOf = y => y < 690 ? 0 : y < 1071 ? 1 : y < 1429 ? 2 : 3;
+
+// e = explosion amount 0 (flat map) → 1 (exploded world)
+let e = 0, eTarget = 0;
+const GAP = 260;               // extra distance between bands along Z
+const LIFT = 70;               // slabs step up slightly towards the back
+const CARD_Y = 400;            // height of the floating cards
+const zOf = (y, k = e) => (y - CY) + k * GAP * (bandOf(Math.min(y, 1625)) - 1.5);
+const slabY = (b, k = e) => k * LIFT * (3 - b);
+const xOf = x => x - CX;
+
+// ---------- three setup
+const host = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(C.paper);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+host.appendChild(renderer.domElement);
+const labelR = new CSS2DRenderer({ element: document.getElementById('labels') });
+labelR.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(C.paper, 5200, 10500);
+const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 10, 30000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 200; controls.maxDistance = 9000;
+controls.screenSpacePanning = true;
+
+const loader = new THREE.TextureLoader();
+const tex = src => { const t = loader.load(src); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
+
+// ---------- endless floor: the tidal chart behind the 2D map, placed as in the SVG and mirrored outwards
+{
+  const ft = tex('img/floor_tile.jpg');
+  ft.wrapS = ft.wrapT = THREE.MirroredRepeatWrapping;
+  const TW = 3269.03, TH_ = 1947.78, N = 9;
+  ft.repeat.set(N, N);
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(TW * N, TH_ * N), new THREE.MeshBasicMaterial({ map: ft }));
+  fl.rotation.x = -Math.PI / 2;
+  // tile spans x -316 → 2953, y -116 → 1832 in map units
+  fl.position.set(xOf(-316 + TW / 2), -12, (-116 + TH_ / 2) - CY);
+  scene.add(fl);
+}
+// ---------- floor: the 2D map, cut into the four bands (slabs)
+const ghost = tex('img/ghost.jpg');
+const slabs = [];
+const ruleMat = new THREE.LineBasicMaterial({ color: 0x141414 });
+const thinMat = new THREE.LineBasicMaterial({ color: 0xD6D6D6 });
+BANDS.forEach(([y0, y1, name], b) => {
+  const w = FX1 - FX0, h = y1 - y0;
+  const g = new THREE.PlaneGeometry(w, h);
+  const uv = g.attributes.uv, pos = g.attributes.position;
+  for (let i = 0; i < uv.count; i++) {
+    const mx = FX0 + (pos.getX(i) + w / 2), my = y0 + (h / 2 - pos.getY(i));
+    uv.setXY(i, mx / MW, 1 - my / MH);
+  }
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: ghost }));
+  m.rotation.x = -Math.PI / 2;
+  const grp = new THREE.Group(); grp.add(m);
+  // slab outline + era dividers
+  const hw = w / 2, hh = h / 2, pts = [];
+  pts.push(-hw, 0, -hh, hw, 0, -hh, hw, 0, -hh, hw, 0, hh, hw, 0, hh, -hw, 0, hh, -hw, 0, hh, -hw, 0, -hh);
+  const outline = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)), ruleMat);
+  outline.position.y = 0.6; grp.add(outline);
+  const div = [];
+  for (const x of [508, 926, 1354]) div.push(x - FX0 - hw, 0, -hh, x - FX0 - hw, 0, hh);
+  const dl = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(div, 3)), thinMat);
+  dl.position.y = 0.5; grp.add(dl);
+  // slab thickness (a thin paper edge)
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(w, 6, h), new THREE.MeshBasicMaterial({ color: 0xEDEDEA }));
+  edge.position.y = -3.5; grp.add(edge);
+  scene.add(grp);
+  const lab = document.createElement('div'); lab.className = 'band'; lab.textContent = name;
+  const lo = new CSS2DObject(lab); lo.center.set(1, 0.5); scene.add(lo);
+  slabs.push({ grp, y0, y1, b, lo, lab });
+});
+// ---------- the year line: hinged on the back edge, it rises into a wall
+const WALL_W = FX1 - FX0, STRIP_H = 60, WALL_H = 420;
+const wall = new THREE.Group(); scene.add(wall);
+function stripTexture() {
+  const k = 3, cv = document.createElement('canvas'); cv.width = WALL_W * k; cv.height = STRIP_H * k;
+  const g = cv.getContext('2d'); g.scale(k, k);
+  const my = STRIP_H / 2;
+  g.strokeStyle = '#141414'; g.lineWidth = 1.4;
+  g.beginPath(); g.moveTo(0, my); g.lineTo(WALL_W, my);
+  for (const x of [FX0, 508, 926, 1354, FX1]) { const xx = Math.min(WALL_W - 0.5, Math.max(0.5, x - FX0)); g.moveTo(xx, my - 9); g.lineTo(xx, my + 9); }
+  g.stroke();
+  g.font = '700 24px "IBM Plex Mono"'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const [x0, x1, t] of ERAS) {
+    const cx = (x0 + x1) / 2 - FX0, w = g.measureText(t).width + 18;
+    g.fillStyle = '#FBFBF9'; g.fillRect(cx - w / 2, my - 16, w, 32);
+    g.fillStyle = '#141414'; g.fillText(t, cx, my + 0.5);
+  }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
+}
+function bodyTexture() {
+  const k = 1, cv = document.createElement('canvas'); cv.width = WALL_W * k; cv.height = 64;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#FBFBF9'; g.fillRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#D6D6D6';
+  for (const x of [508, 926, 1354]) g.fillRect((x - FX0) * k, 0, 1, cv.height);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+let strip, body, bodyEdge;
+function buildWall() {
+  strip = new THREE.Mesh(new THREE.PlaneGeometry(WALL_W, STRIP_H), new THREE.MeshBasicMaterial({ map: stripTexture(), side: THREE.DoubleSide, transparent: true, depthWrite: false }));
+  // see-through wall: only its outline
+  body = new THREE.Object3D();
+  bodyEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(WALL_W, 1)), ruleMat); 
+  body.add(bodyEdge);
+  wall.add(body, strip);
+}
+
+
+// ---------- images: hinge on their lower edge, pop up like a pop-up book
+const images = D.images.map((im, i) => {
+  const t = tex(im.file);
+  const png = im.file.endsWith('.png');
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(im.w, im.h), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide, transparent: png, alphaTest: png ? 0.05 : 0 }));
+  mesh.position.y = im.h / 2;
+  if (!png) { const fr = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({ color: 0x141414, transparent: true, opacity: 0.35 })); mesh.add(fr); }
+  const hinge = new THREE.Group(); hinge.add(mesh); scene.add(hinge);
+  mesh.userData = { kind: 'img', im };
+  return { im, hinge, mesh, band: bandOf(im.y + im.h), order: i, delay: (im.x - FX0) / (FX1 - FX0) };
+});
+
+// ---------- cards: drawn on canvas in the same style as the 2D map
+const S = 5; // texture pixels per map unit
+const threadOf = {}; for (const k in D.threads) for (const id of D.threads[k]) (threadOf[id] ||= []).push(k);
+function wrap(ctx, text, maxW) {
+  const words = text.split(/\s+/), lines = []; let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
+  if (cur) lines.push(cur); return lines;
+}
+function drawCard(c) {
+  const concept = D.concept.includes(c.id), gaza = c.id === 'card_31', onGaza = (threadOf[c.id] || []).includes('gaza');
+  const w = Math.max(c.w, 150), pad = 7, inner = w - pad * 2;
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  // measure first
+  ctx.font = `700 9.5px "IBM Plex Mono"`; const tl = wrap(ctx, '[' + c.title.toUpperCase() + ']', inner);
+  ctx.font = `400 7.6px Inter`; const bl = wrap(ctx, c.body || '', inner);
+  const dateH = c.date ? 12 : 0, titleH = tl.length * 11.5, bodyH = bl.length * 10.4;
+  const h = concept ? (titleH + 8) + 6 + bodyH + 4 : pad + dateH + titleH + 4 + bodyH + pad - 2;
+  cv.width = Math.round(w * S); cv.height = Math.round(h * S);
+  ctx.scale(S, S); ctx.textBaseline = 'top';
+  if (concept) {
+    ctx.fillStyle = '#FBFBF9'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = C.ink; ctx.fillRect(0, 0, w, titleH + 8);
+    ctx.fillStyle = '#FBFBF9'; ctx.font = `700 9.5px "IBM Plex Mono"`;
+    tl.forEach((l, i) => ctx.fillText(l, pad, 4.5 + i * 11.5));
+    ctx.fillStyle = C.ink2; ctx.font = `400 7.6px Inter`;
+    bl.forEach((l, i) => ctx.fillText(l, pad - 2, titleH + 14 + i * 10.4));
+  } else {
+    ctx.fillStyle = gaza ? C.gaza : '#FFFFFF'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
+    let y = pad;
+    if (c.date) {
+      ctx.font = `500 7.4px "IBM Plex Mono"`;
+      const dt = c.date.toUpperCase(), dw = ctx.measureText(dt).width;
+      if (onGaza && !gaza) { ctx.fillStyle = C.gaza; ctx.fillRect(pad - 2, y - 1.5, dw + 4, 10); }
+      ctx.fillStyle = gaza || onGaza ? C.ink : C.g1; ctx.fillText(dt, pad, y); y += dateH;
+    }
+    ctx.fillStyle = C.ink; ctx.font = `700 9.5px "IBM Plex Mono"`;
+    tl.forEach((l, i) => ctx.fillText(l, pad, y + i * 11.5)); y += titleH + 4;
+    ctx.fillStyle = C.ink2; ctx.font = `400 7.6px Inter`;
+    bl.forEach((l, i) => ctx.fillText(l, pad, y + i * 10.4));
+  }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return { t, w, h };
+}
+const cards = [], byId = {};
+const qFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+const stemMat = new THREE.LineBasicMaterial({ color: 0x9A9A9A, transparent: true, opacity: 0 });
+function buildCards() {
+  for (const c of D.cards) {
+    const { t, w, h } = drawCard(c);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide, transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
+    mesh.renderOrder = 10; mesh.visible = false;
+    scene.add(mesh);
+    const stem = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), stemMat);
+    scene.add(stem);
+    const dot = new THREE.Mesh(new THREE.CircleGeometry(4, 20), new THREE.MeshBasicMaterial({ color: 0x141414, transparent: true, opacity: 0 }));
+    dot.rotation.x = -Math.PI / 2; scene.add(dot);
+    const onGaza = (threadOf[c.id] || []).includes('gaza'), isGaza = c.id === 'card_31';
+    const nr = isGaza ? 10 : onGaza ? 6 : 4.5;
+    const node = new THREE.Mesh(new THREE.SphereGeometry(nr, 18, 12), new THREE.MeshBasicMaterial({ color: onGaza ? C.gaza : 0x141414 }));
+    if (onGaza) node.add(new THREE.Mesh(new THREE.SphereGeometry(nr * 1.22, 18, 12), new THREE.MeshBasicMaterial({ color: 0x141414, side: THREE.BackSide })));
+    node.renderOrder = 3; scene.add(node);
+    const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+    const k = { c, mesh, stem, dot, node, show: 0, w, h, cx, cy, band: bandOf(cy), delay: (cx - FX0) / (FX1 - FX0), hover: 0, yExtra: (c.id === 'card_31') ? 160 : 0 };
+    mesh.userData = { kind: 'card', k }; node.userData = { kind: 'node', k };
+    cards.push(k); byId[c.id] = k;
+  }
+}
+
+// ---------- threads
+const TH = {
+  gaza: { col: C.gaza, tube: 2.6, on: true },
+  view: { col: C.view, tube: 1.1, on: true },
+  proj: { col: C.proj, tube: 0, on: true },
+};
+const threads = {};
+function buildThreads() {
+  for (const k in D.threads) {
+    const ids = D.threads[k].filter(id => byId[id]);
+    const grp = new THREE.Group(); scene.add(grp);
+    const segs = [];
+    for (let i = 0; i < ids.length - 1; i++) {
+      let obj;
+      if (TH[k].tube) obj = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: TH[k].col }));
+      else { obj = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(1, 0, 0)]), new THREE.LineDashedMaterial({ color: TH[k].col, dashSize: 14, gapSize: 9 })); }
+      obj.renderOrder = 1;
+      grp.add(obj); segs.push({ obj, a: byId[ids[i]], b: byId[ids[i + 1]] });
+    }
+    // knots where the yellow thread touches a card
+    const knots = [];
+    if (false) for (const id of ids) {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(6, 16, 12), new THREE.MeshBasicMaterial({ color: C.gaza }));
+      const r = new THREE.Mesh(new THREE.SphereGeometry(7.3, 16, 12), new THREE.MeshBasicMaterial({ color: 0x141414, side: THREE.BackSide }));
+      s.add(r); s.renderOrder = 3; grp.add(s); knots.push({ s, card: byId[id] });
+    }
+    threads[k] = { grp, segs, knots };
+  }
+}
+const anchor = (k, out) => out.copy(k.node.position);
+const A = new THREE.Vector3(), B = new THREE.Vector3();
+function updateThreads() {
+  for (const k in threads) {
+    const T = threads[k];
+    T.grp.visible = TH[k].on;
+    for (const s of T.segs) {
+      anchor(s.a, A); anchor(s.b, B);
+      if (TH[k].tube) {
+        s.obj.geometry.dispose();
+        s.obj.geometry = new THREE.TubeGeometry(new THREE.LineCurve3(A.clone(), B.clone()), 1, TH[k].tube, 6, false);
+      } else {
+        s.obj.geometry.setFromPoints([A.clone(), B.clone()]); s.obj.computeLineDistances();
+      }
+    }
+    for (const n of T.knots) n.s.position.copy(n.card.mesh.position);
+  }
+}
+
+// ---------- place everything for the current e
+const tmpQ = new THREE.Quaternion(), yawQ = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+const stagger = (d, k) => THREE.MathUtils.clamp(k * 1.6 - d * 0.6, 0, 1); // left-to-right ripple
+const smooth = t => t * t * (3 - 2 * t);
+function layout() {
+  for (const s of slabs) {
+    const zc = zOf((s.y0 + s.y1) / 2 - 0.0001 + 0.0001), yy = slabY(s.b);
+    s.grp.position.set(xOf((FX0 + FX1) / 2), yy, zOf((s.y0 + s.y1) / 2));
+    s.lo.position.set(xOf(FX0) - 26, yy, zc);
+  }
+  if (strip) {
+    const kw = smooth(THREE.MathUtils.clamp(e * 1.25, 0, 1));
+    wall.position.set(xOf((FX0 + FX1) / 2), slabY(0) + 0.4, zOf(56));
+    wall.rotation.x = -(1 - kw) * Math.PI / 2;
+    const bh = Math.max(0.01, WALL_H * kw);
+    body.scale.y = bh; body.position.y = bh / 2; body.visible = kw > 0.01;
+    strip.position.y = bh + STRIP_H / 2; strip.position.z = 0.5;
+  }
+
+  for (const I of images) {
+    const k = smooth(stagger(I.delay, e));
+    const im = I.im;
+    I.hinge.position.set(xOf(im.x + im.w / 2), slabY(I.band) + 1 + I.order * 0.02 * (1 - k), zOf(im.y + im.h));
+    I.hinge.rotation.x = -(1 - k) * Math.PI / 2;
+  }
+  for (const K of cards) {
+    const k = smooth(stagger(K.delay, e));
+    const flatY = slabY(K.band) + 3, z = zOf(K.cy);
+    const y = THREE.MathUtils.lerp(flatY, slabY(K.band) + CARD_Y + K.yExtra, k);
+    K.mesh.position.set(xOf(K.cx), y, z);
+    const yaw = Math.atan2(camera.position.x - K.mesh.position.x, camera.position.z - K.mesh.position.z);
+    yawQ.setFromAxisAngle(up, yaw);
+    K.mesh.quaternion.slerpQuaternions(qFlat, yawQ, k);
+    const base = new THREE.Vector3(xOf(K.cx), slabY(K.band) + 0.8, z);
+    K.stem.geometry.setFromPoints([base, new THREE.Vector3(base.x, y, z)]);
+    K.dot.position.copy(base); K.dot.material.opacity = k;
+    K.node.position.copy(K.mesh.position);
+    K.mesh.visible = K.show > 0.01; K.mesh.material.opacity = K.show;
+    K.mesh.scale.setScalar(1.5 * (0.9 + 0.1 * K.show));
+    if (k > 0.5) K.mesh.position.y += K.h * 0.75 + 16; // caption sits just above its node
+  }
+  stemMat.opacity = smooth(THREE.MathUtils.clamp(e * 1.3 - 0.3, 0, 1)) * 0.9;
+  for (const s of slabs) s.lab.style.opacity = 1;
+  updateThreads();
+}
+
+// ---------- camera views
+const VIEWS = {
+  persp: [[-2050, 2250, 3350], [-60, 160, 260]],
+  top: [[0, 3900, 1], [0, 0, 0]],
+  front: [[0, 1150, 3900], [0, 260, 150]],
+  side: [[-3700, 900, 200], [0, 260, 0]],
+};
+let fly = null;
+function flyTo(pos, tgt, ms = 1400) {
+  if (reduce) { camera.position.copy(pos); controls.target.copy(tgt); return; }
+  fly = { t0: performance.now(), ms, p0: camera.position.clone(), q0: controls.target.clone(), p1: pos, q1: tgt };
+}
+function setView(v) {
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
+  const [p, t] = VIEWS[v]; flyTo(new THREE.Vector3(...p), new THREE.Vector3(...t));
+}
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
+
+
+document.querySelectorAll('[data-thread]').forEach(b => b.onclick = () => {
+  const k = b.dataset.thread; TH[k].on = !TH[k].on; b.setAttribute('aria-pressed', TH[k].on);
+});
+
+// ---------- picking
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+let hovered = null, down = null, hoverImg = null;
+const link = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(1, 0, 0)]), new THREE.LineDashedMaterial({ color: 0x141414, dashSize: 6, gapSize: 5, transparent: true, opacity: 0, depthTest: false }));
+link.renderOrder = 9; scene.add(link);
+function pick(ev) {
+  mouse.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(cards.filter(k => k.show > 0.5).map(k => k.mesh).concat(cards.map(k => k.node), images.map(i => i.mesh)), false)[0];
+  return hit ? hit.object : null;
+}
+renderer.domElement.addEventListener('pointermove', ev => {
+  const o = pick(ev);
+  hoverImg = o && o.userData.kind === 'img' ? o : null;
+  hovered = !o ? null : o.userData.kind === 'img' ? (byId[D.img2card[o.userData.im.id]] || null) : o.userData.k;
+  renderer.domElement.style.cursor = o ? (o.userData.kind === 'img' ? 'zoom-in' : 'pointer') : 'grab';
+});
+renderer.domElement.addEventListener('pointerdown', ev => down = [ev.clientX, ev.clientY]);
+renderer.domElement.addEventListener('pointerup', ev => {
+  if (!down || Math.hypot(ev.clientX - down[0], ev.clientY - down[1]) > 5) return;
+  const o = pick(ev); if (!o) return;
+  if (o.userData.kind === 'img') { lbImg.src = o.userData.im.file; lb.classList.add('on'); return; }
+  const K = o.userData.k, p = K.mesh.position.clone();
+  if (e < 0.5) { flyTo(new THREE.Vector3(p.x, 700, p.z + 1), p.clone()); return; }
+  const dir = camera.position.clone().sub(p); dir.y = 0; dir.normalize();
+  flyTo(p.clone().add(dir.multiplyScalar(Math.max(K.w, K.h * 1.6) * 2.4)).add(new THREE.Vector3(0, 30, 0)), p.clone());
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', false));
+});
+const lb = document.getElementById('lightbox'), lbImg = document.getElementById('lbImg');
+lb.onclick = () => lb.classList.remove('on');
+addEventListener('keydown', ev => { if (ev.key === 'Escape') lb.classList.remove('on'); });
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); });
+
+// ---------- loop
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  // explode when the map is tilted, recompose when seen from above
+  const pol = controls.getPolarAngle();
+  eTarget = THREE.MathUtils.clamp((pol - 0.12) / 0.55, 0, 1);
+  if (e !== eTarget) {
+    if (reduce) e = eTarget;
+    else { const sp = 1.1; e = eTarget > e ? Math.min(eTarget, e + dt * sp) : Math.max(eTarget, e - dt * sp); }
+  }
+  for (const K of cards) K.show += ((K === hovered ? 1 : 0) - K.show) * (reduce ? 1 : 0.22);
+  if (fly) {
+    const t = Math.min(1, (now - fly.t0) / fly.ms), q = ease(t);
+    camera.position.lerpVectors(fly.p0, fly.p1, q); controls.target.lerpVectors(fly.q0, fly.q1, q);
+    if (t >= 1) fly = null;
+  }
+  controls.update();
+  layout();
+  if (hoverImg && hovered) {
+    const top = hoverImg.localToWorld(new THREE.Vector3(0, hoverImg.userData.im.h / 2, 0));
+    link.geometry.setFromPoints([top, hovered.node.position.clone()]); link.computeLineDistances();
+    link.material.opacity = Math.min(0.8, hovered.show); link.visible = true;
+  } else link.visible = false;
+  renderer.render(scene, camera); labelR.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+
+// ---------- start: flat map seen from above, then it explodes
+(async () => {
+  try { await Promise.all([document.fonts.load('700 10px "IBM Plex Mono"'), document.fonts.load('500 10px "IBM Plex Mono"'), document.fonts.load('400 10px Inter')]); } catch (_) {}
+  buildCards(); buildThreads(); buildWall();
+  const [p, t] = VIEWS.top; camera.position.set(...p); controls.target.set(...t);
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === 'top'));
+  requestAnimationFrame(tick);
+  const ld = document.getElementById('loader'); ld.style.opacity = 0; setTimeout(() => ld.remove(), 700);
+})();
+</script>
+</body>
+</html>
