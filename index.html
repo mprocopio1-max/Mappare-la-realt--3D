@@ -6,487 +6,508 @@
 <title>Mappare la realtà</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root{
-  /* palette taken from the 2D map */
-  --paper:#FBFBF9; --ink:#141414; --ink2:#2A2A2A; --g1:#6B6B6B; --g2:#9A9A9A; --rule:#D6D6D6;
-  --gaza:#F2D13A; --view:#FF272B; --proj:#26FF00;
-  --mono:'IBM Plex Mono', ui-monospace, monospace; --sans:'Inter', system-ui, sans-serif;
-}
+:root{--ink:#111;--ink2:#3a3a3a;--g1:#8a8a86;--paper:#F6F6F3;--gaza:#F2D13A;--sans:'Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);overflow:hidden}
+html,body{height:100%;margin:0;color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+body{background:radial-gradient(120% 90% at 50% 40%,#FDFDFB 0%,#F3F3EF 60%,#E9E9E4 100%)}
 #scene,#labels{position:fixed;inset:0}
 #labels{pointer-events:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
-button:focus-visible{outline:1.5px solid var(--ink);outline-offset:3px}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
-#title{position:fixed;top:26px;left:30px;pointer-events:none}
-#title h1{margin:0;font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.16em}
-#title p{margin:6px 0 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--g1)}
-#north{position:fixed;top:24px;right:30px;font-family:var(--mono);font-size:11px;font-weight:600;text-align:center;line-height:1;pointer-events:none}
-#north svg{display:block;margin:0 auto 3px}
+#explore{position:fixed;top:24px;left:24px;z-index:20;background:var(--ink);color:#fff;border-radius:999px;padding:12px 24px;font-size:14px;font-weight:600;letter-spacing:.01em;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);transition:transform .25s,opacity .6s,background .2s}
+#explore:hover{transform:translateY(-1px);background:#000}
+#explore .ic{width:8px;height:8px;border-radius:50%;background:var(--gaza);box-shadow:0 0 0 3px rgba(242,209,58,.25)}
+#explore[disabled]{opacity:0;pointer-events:none}
 
-#bar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:var(--paper);border:1px solid var(--ink);padding:3px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
-#bar button{padding:7px 11px}
-#bar button:hover{background:#efefec}
-#bar button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
-#bar .sep{width:1px;align-self:stretch;background:var(--rule);margin:3px 4px}
-#explode{font-weight:600}
+/* hover caption */
+#tip{position:fixed;left:0;top:0;z-index:15;pointer-events:none;width:280px;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:14px;padding:12px 14px 13px;box-shadow:0 12px 40px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s}
+#tip.on{opacity:1;transform:none}
+#tip .d{font-family:var(--mono);font-size:10.5px;color:var(--g1);letter-spacing:.02em}
+#tip .t{font-weight:700;font-size:14px;line-height:1.25;margin:3px 0 6px}
+#tip .b{font-size:12.5px;line-height:1.45;color:var(--ink2)}
+#tip .tag{display:inline-block;font-size:10px;font-weight:600;background:#111;color:#fff;border-radius:999px;padding:2px 8px;margin-bottom:6px}
+#tip .pal{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gaza);margin-right:6px;vertical-align:1px}
 
-#legend{position:fixed;right:30px;bottom:24px;border:1px solid var(--ink);background:var(--paper);padding:9px 12px 10px;font-family:var(--mono);font-size:10px;display:flex;flex-direction:column;gap:6px;min-width:250px}
-#legend b{font-weight:700;letter-spacing:.1em;font-size:9.5px}
-#legend button{display:flex;align-items:center;gap:9px;text-align:left;transition:opacity .2s}
-#legend button[aria-pressed="false"]{opacity:.3}
-#legend svg{flex:none}
+/* tour */
+#tour{position:fixed;left:24px;bottom:24px;z-index:12;width:min(440px,calc(100vw - 48px));background:rgba(255,255,255,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:20px;padding:20px 22px 18px;box-shadow:0 18px 60px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .45s,transform .45s}
+#tour.on{opacity:1;transform:none;pointer-events:auto}
+#tour .k{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;color:var(--g1);letter-spacing:.02em}
+#tour h2{margin:8px 0 8px;font-size:22px;line-height:1.15;font-weight:700;letter-spacing:-.02em}
+#tour p{margin:0;font-size:14px;line-height:1.55;color:var(--ink2)}
+#tour .sw{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:8px}
+#tour .body{transition:opacity .3s}
+#prog{height:3px;background:rgba(0,0,0,.08);border-radius:3px;margin-top:16px;overflow:hidden}
+#prog i{display:block;height:100%;background:var(--ink);border-radius:3px;transition:width .5s}
+.arrow{position:fixed;top:50%;z-index:12;width:52px;height:52px;margin-top:-26px;border-radius:50%;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s,background .2s,transform .2s}
+.arrow.on{opacity:1;pointer-events:auto}
+.arrow:hover{background:var(--ink);transform:scale(1.05)}
+.arrow:hover path{stroke:#fff}
+.arrow[disabled]{opacity:.25!important;pointer-events:none}
+#prev{left:24px} #next{right:24px}
 
-#hint{position:fixed;left:30px;bottom:26px;font-family:var(--mono);font-size:10px;color:var(--g1);letter-spacing:.04em;line-height:1.6;pointer-events:none}
+/* in-tour labels */
+.lab{font-size:10.5px;font-weight:600;line-height:1.2;background:rgba(255,255,255,.94);border-radius:999px;padding:4px 9px 5px;box-shadow:0 2px 10px rgba(0,0,0,.1);white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .35s;pointer-events:none}
+.lab.pal::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gaza);margin-right:5px;vertical-align:1px;box-shadow:0 0 0 1px #111}
+.lab.on{opacity:1}
+.city,.tick,.band{font-size:10.5px;font-weight:600;white-space:nowrap;opacity:0;transition:opacity .4s;pointer-events:none}
+.city{background:#111;color:var(--gaza);border-radius:999px;padding:3px 8px}
+.tick{font-family:var(--mono);background:#111;color:#fff;border-radius:999px;padding:3px 8px}
+.band{background:rgba(255,255,255,.9);border-radius:999px;padding:4px 10px;letter-spacing:.06em;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.city.on,.tick.on,.band.on{opacity:1}
 
-.era{background:var(--paper);padding:0 8px;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--ink);white-space:nowrap;transition:opacity .4s}
-.band{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.2em;color:var(--ink);white-space:nowrap;transition:opacity .4s}
+#lightbox{position:fixed;inset:0;z-index:30;background:rgba(246,246,243,.86);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;gap:28px;padding:40px;opacity:0;pointer-events:none;transition:opacity .3s;cursor:zoom-out}
+#lightbox.on{opacity:1;pointer-events:auto}
+#lightbox img{max-width:min(62vw,900px);max-height:80vh;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+#lightbox .cap{width:300px}
+#lightbox .cap .d{font-family:var(--mono);font-size:11px;color:var(--g1)}
+#lightbox .cap .t{font-weight:700;font-size:20px;line-height:1.2;margin:6px 0 10px;letter-spacing:-.01em}
+#lightbox .cap .b{font-size:14px;line-height:1.55;color:var(--ink2)}
+#lightbox .thumbs{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+#lightbox .thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;box-shadow:none;cursor:pointer;opacity:.6}
+#lightbox .thumbs img.on{opacity:1;outline:2px solid #111}
 
-#lightbox{position:fixed;inset:0;background:rgba(251,251,249,.94);display:none;align-items:center;justify-content:center;padding:40px;z-index:10;cursor:zoom-out}
-#lightbox.on{display:flex}
-#lightbox img{max-width:min(90vw,1100px);max-height:84vh;border:1px solid var(--ink)}
-
-#loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--g1);background:var(--paper);transition:opacity .6s;z-index:20}
+#loader{position:fixed;inset:0;z-index:40;background:#F6F6F3;transition:opacity .8s}
 
 @media (max-width:820px){
-  #legend,#hint{display:none}
-  #bar{bottom:16px;font-size:9.5px}
-  #bar button{padding:7px 8px}
+  #tour{left:12px;right:12px;bottom:12px;width:auto;padding:16px 16px 14px}
+  #tour h2{font-size:18px} #tour p{font-size:13px}
+  .arrow{top:40%;width:44px;height:44px} #prev{left:10px} #next{right:10px}
+  #tip{display:none}
+  #lightbox{flex-direction:column;gap:16px;overflow:auto} #lightbox img{max-width:90vw;max-height:50vh} #lightbox .cap{width:auto;max-width:90vw}
 }
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
 </script>
+<script src="data.js"></script>
+<script src="tex.js"></script>
 </head>
 <body>
-<div id="scene" aria-label="Mappa 3D: trascina per ruotare, rotella per lo zoom"></div>
+<div id="scene" aria-label="Mappa 3D della Striscia di Gaza in strati: trascina per ruotare, rotella per lo zoom"></div>
 <div id="labels"></div>
+<div id="loader"></div>
+<button id="explore" disabled><span id="exploreTxt">Esplora</span></button>
+<div id="tip" role="tooltip"></div>
+<section id="tour" aria-live="polite">
+  <div class="body"><div class="k"><span id="tk"></span><span id="tn"></span></div><h2 id="tt"></h2><p id="tp"></p></div>
+  <div id="prog"><i></i></div>
+</section>
+<button class="arrow" id="prev" aria-label="Passo precedente"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M11 3.5L5.5 9L11 14.5" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button class="arrow" id="next" aria-label="Passo successivo"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M7 3.5L12.5 9L7 14.5" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<div id="lightbox" role="dialog" aria-label="Immagine"><img alt=""><div class="cap"></div></div>
 
-<div id="north" aria-hidden="true"><svg width="12" height="16" viewBox="0 0 12 16"><path d="M6 0 L12 16 L6 12 L0 16 Z" fill="#141414"/></svg>N</div>
-
-
-<div id="legend" aria-label="Legenda, clicca per mostrare o nascondere i fili">
-  <b>LEGENDA</b>
-  <button data-thread="gaza" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#F2D13A" stroke-width="3"/><circle cx="4" cy="4" r="3" fill="#F2D13A" stroke="#141414"/><circle cx="30" cy="4" r="3" fill="#F2D13A" stroke="#141414"/></svg>Filo del caso studio, verso Gaza 2023–2026</button>
-  <button data-thread="view" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#FF272B" stroke-width="1.5"/></svg>The View from Above: dalla foto aerea al satellite</button>
-  <button data-thread="proj" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#26FF00" stroke-width="1.5" stroke-dasharray="4 3"/></svg>Proiezioni: da Mercatore a Correct the Map</button>
-  <button data-thread="back" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#2B59FF" stroke-width="2"/><path d="M4 0.5L7.5 4L4 7.5L0.5 4Z" fill="white" stroke="#2B59FF"/></svg>Mapping back: da Du Bois a Forensic Architecture</button>
-  <button data-thread="conv" aria-pressed="true"><svg width="34" height="8"><line x1="0" y1="4" x2="34" y2="4" stroke="#F2D13A" stroke-width="2" stroke-dasharray="6 4"/></svg>Convergenza su Gaza</button>
-</div>
-
-
-<div id="lightbox" role="dialog" aria-modal="true" aria-label="Immagine"><img id="lbImg" alt=""></div>
-<div id="loader">CARICAMENTO DELLA MAPPA…</div>
-
-<script id="data" type="application/json">{"img2card": {"i01": "card_33", "i02": "card_13", "i03": "card_19", "i04": "card_4", "i05": "card", "i06": "card", "i07": "card_5", "i08": "card_9", "i09": "card_2", "i10": "qtm", "i11": "card_2", "i12": "card_33", "i13": "radcliffe", "i14": "card_3", "i15": "card", "i16": "card_10", "i17": "card_10", "i18": "card_17", "i19": "card_16", "i20": "card_28", "i21": "card_20", "i22": "card_14", "i23": "card_22", "i24": "card_21", "i25": "card_22", "i26": "card_22", "i27": "card_28", "i28": "card_23", "i29": "card_23", "i30": "card_29", "i31": "card_31", "i32": "card_7", "i33": "card_7", "i34": "card_33", "i35": "new_farocki", "i36": "card_36", "i37": "card_30", "i38": "card_35", "i39": "card_7", "i40": "card_23", "i41": "card_23", "i42": "card_32", "i43": "enote", "i44": "card_11", "i45": "dollar", "i46": "dubois", "i47": "dubois", "i48": "dubois", "i49": "brasile", "i50": "stick", "i51": "stick", "i52": "indig"}, "cards": [{"id": "card", "date": "1855–1918", "title": "Fotografia aerea, seconda metà dell’Ottocento – Prima guerra mondiale", "body": "La fotografia aerea introduce uno sguardo verticale sul territorio, prima con palloni aerostatici e poi con uso sistematico nella ricognizione militare durante la Prima guerra mondiale.", "x": 605.4, "y": 229.2, "w": 184.6, "h": 123.2}, {"id": "card_2", "date": "1569", "title": "Proiezione di Mercatore", "body": "La proiezione di Mercatore conserva gli angoli, ma deforma le superfici, mostrando come una tecnologia possa diventare una rappresentazione generale del mondo.", "x": 300.4, "y": 106.8, "w": 165.7, "h": 100.3}, {"id": "card_3", "date": "Dal XV secolo", "title": "Espansione europea", "body": "L’espansione marittima europea crea una forte domanda di strumenti cartografici più precisi, legando navigazione, commercio, conquista e cartografia.", "x": 202.4, "y": 451.8, "w": 168.9, "h": 89.2}, {"id": "card_4", "date": "1884–1885", "title": "Conferenza di Berlino", "body": "La Conferenza di Berlino stabilisce regole coloniali senza la partecipazione delle popolazioni africane, mostrando come una linea cartografica possa diventare confine politico.", "x": 149.4, "y": 627.8, "w": 164.6, "h": 100.3}, {"id": "card_5", "date": "XVII–XIX secolo", "title": "Cartografia degli Stati moderni", "body": "La mappa diventa strumento per rendere il territorio leggibile e amministrabile, mostrando che rappresentare significa anche rendere governabile.", "x": 383.3, "y": 627.7, "w": 139.3, "h": 111.8}, {"id": "card_6", "date": "1947–1948", "title": "Partizione della Palestina", "body": "Il periodo tra il piano di partizione e gli eventi del 1948 mostra come linee, confini e trasformazioni territoriali abbiano conseguenze sulla vita delle persone e sulla memoria dei luoghi.", "x": 1028.4, "y": 942.8, "w": 171.9, "h": 100.3}, {"id": "card_7", "date": "1939–1945", "title": "WWII", "body": null, "x": 806.4, "y": 978.0, "w": 171.9, "h": 39.6}, {"id": "card_8", "date": "ANNI SESSANTA E SETTANTA", "title": "DECOLONIZZAZIONE", "body": "La fine degli imperi coloniali mette in discussione anche i sistemi con cui territori, confini e popolazioni erano stati rappresentati e classificati.", "x": 1485.4, "y": 861.0, "w": 159.5, "h": 89.4}, {"id": "card_9", "date": "1957", "title": "Sputnik 1", "body": "Sputnik 1 segna l’inizio dell’era spaziale e introduce uno sguardo orbitale, rendendo la Terra osservabile letteralmente dall’esterno.", "x": 1089.3, "y": 262.5, "w": 169.4, "h": 89.2}, {"id": "card_10", "date": "1968–1972", "title": "Earthrise e Blue Marble", "body": "Le fotografie della Terra realizzate dalle missioni Apollo trasformano l’immaginario collettivo, mostrando il pianeta come un unico sistema osservabile dall’esterno.", "x": 1361.3, "y": 336.4, "w": 189.5, "h": 89.2}, {"id": "card_11", "date": "1972", "title": "Landsat 1", "body": "Landsat 1 introduce la possibilità di osservare sistematicamente la superficie terrestre nel tempo, rendendo visibile la trasformazione del territorio.", "x": 1445.3, "y": 536.2, "w": 158.0, "h": 100.3}, {"id": "card_12", "date": "2004", "title": "OPENSTREETMAP", "body": "La produzione cartografica passa in parte da istituzioni e aziende a comunità distribuite di utenti.", "x": 1829.4, "y": 339.1, "w": 190.2, "h": 78.3}, {"id": "card_13", "date": "2020", "title": "Pandemia COVID-19", "body": "Mappe e dashboard per monitorare l’andamento della pandemia", "x": 2055.4, "y": 107.7, "w": 190.2, "h": 67.1}, {"id": "card_14", "date": "2024–2026", "title": "FORENSIC ARCHITECTURE", "body": "Dati spaziali e temporali vengono messi in relazione per ricostruire eventi e pattern.", "x": 2102.4, "y": 332.1, "w": 190.2, "h": 67.2, "tag": "MAPPING AS EVIDENCE"}, {"id": "card_15", "date": "Anni Sessanta", "title": "Nascita del GIS", "body": "Il Geographic Information System trasforma la mappa in un database composto da livelli informativi separati, interrogabili e combinabili.", "x": 1174.3, "y": 469.4, "w": 173.6, "h": 89.2}, {"id": "card_16", "date": "1963", "title": "Proiezione Robinson", "body": "La Robinson introduce il concetto di compromesso cartografico, privilegiando una rappresentazione complessivamente equilibrata e visivamente leggibile.", "x": 994.3, "y": 741.2, "w": 185.2, "h": 89.2}, {"id": "card_17", "date": "Dagli anni Sessanta", "title": "La mappa come sistema di layers", "body": "Con il GIS la mappa può essere composta da diversi livelli informativi accesi, spenti e sovrapposti, modificando il concetto di rappresentazione cartografica.", "x": 1159.3, "y": 618.9, "w": 160.4, "h": 111.8}, {"id": "card_18", "date": "2005", "title": "Google Maps e Google Earth", "body": "Google Maps e Google Earth rendono la cartografia digitale interattiva accessibile a un pubblico globale, unendo vista satellitare, navigazione e database.", "x": 1908.4, "y": 465.0, "w": 190.2, "h": 89.2}, {"id": "card_19", "date": "2018", "title": "Equal Earth", "body": "Equal Earth conserva le proporzioni relative delle superfici e cerca di mantenere una forma complessiva più leggibile rispetto a proiezioni come Gall-Peters.", "x": 1890.3, "y": 677.9, "w": 195.6, "h": 89.2}, {"id": "card_20", "date": "2018", "title": "PALESTINE OPEN MAPS", "body": "Cartografia storica e contemporanea vengono sovrapposte per rendere nuovamente visibili luoghi, nomi e trasformazioni territoriali.", "x": 2067.3, "y": 624.2, "w": 168.4, "h": 89.4, "tag": "MAPPING AS MEMORY"}, {"id": "card_21", "date": "2007", "title": "GOOGLE STREET VIEW", "body": "Il territorio viene trasformato in ambiente fotografico navigabile: lo sguardo scende dall’alto al livello della strada.", "x": 1873.4, "y": 203.6, "w": 190.2, "h": 78.3}, {"id": "card_22", "date": "Dagli anni Settanta agli anni Novanta", "title": "GPS", "body": "Il Global Positioning System cambia il rapporto tra individuo e mappa, rendendo la rappresentazione situata, personale e dinamica.", "x": 1607.4, "y": 395.5, "w": 190.2, "h": 89.2}, {"id": "card_23", "date": "1947–1991", "title": "Guerra Fredda", "body": "La Guerra Fredda sviluppa tecnologie centrali per la cartografia contemporanea, mostrando il carattere dual-use delle tecnologie militari e civili.", "x": 1250.4, "y": 942.8, "w": 183.2, "h": 89.2}, {"id": "card_24", "date": "2026", "title": "ONU, Correct the Map", "body": "L’ONU invita a utilizzare proiezioni che rappresentino in modo più accurato le dimensioni relative dei continenti, riconoscendo la scelta della proiezione come questione educativa, culturale e politica.", "x": 2125.3, "y": 737.7, "w": 184.8, "h": 100.3}, {"id": "card_25", "date": null, "title": "Spazio vissuto e memoria", "body": "Un luogo vissuto contiene memoria, esperienza, identità e relazioni, mostrando che la mappa può essere uno strumento per spazializzare la memoria.", "x": 990.4, "y": 1265.8, "w": 232.0, "h": 65.8}, {"id": "card_26", "date": null, "title": "Platform Geography", "body": "Le mappe cominciano a influenzare direttamente le decisioni quotidiane, partecipando alle scelte di percorso, consumo e orientamento nello spazio.", "x": 1391.4, "y": 1265.8, "w": 232.0, "h": 65.8}, {"id": "card_27", "date": null, "title": "Temporal Dislocation", "body": "Le mappe digitali producono uno scarto tra tempo della rappresentazione e tempo reale, rendendo evidente la distanza tra interazione, immagine e territorio fisico.", "x": 2052.4, "y": 1265.8, "w": 232.0, "h": 65.8}, {"id": "card_28", "date": "1855 e anni Settanta", "title": "Gall e Gall-Peters", "body": "La Gall-Peters conserva le proporzioni delle superfici, ma deforma le forme dei continenti, assumendo significati diversi in contesti storici differenti.", "x": 453.4, "y": 826.7, "w": 185.9, "h": 89.2}, {"id": "card_29", "date": "11 settembre 2001", "title": "Geospatial intelligence", "body": "L’11 settembre accelera lo sviluppo delle tecnologie di sorveglianza e intelligence geografica, aumentando l’importanza di immagini satellitari e droni.", "x": 1693.3, "y": 960.3, "w": 160.4, "h": 100.3}, {"id": "card_30", "date": "MOVIMENTO · ANNI NOVANTA – OGGI", "title": "COUNTER-MAPPING", "body": "Pratiche di counter-mapping utilizzano strumenti cartografici per produrre rappresentazioni alternative, mostrando che la cartografia è un campo nel quale il potere può essere negoziato e contestato.", "x": 1981.3, "y": 1017.5, "w": 157.8, "h": 111.6}, {"id": "card_31", "date": "2023 – 2026", "title": "GAZA 2026", "body": "Uno stesso territorio può esistere contemporaneamente come immagine satellitare, piattaforma commerciale, archivio storico, database investigativo, spazio vissuto e costruzione mediatica.", "x": 2104.0, "y": 840.0, "w": 208.0, "h": 113.0}, {"id": "card_32", "date": "Anni Duemila", "title": "Dallo Stato alla piattaforma", "body": "Aziende tecnologiche private diventano intermediari fondamentali tra territorio e utente, sollevando domande su chi possiede i dati e chi decide cosa viene mostrato.", "x": 1830.3, "y": 847.7, "w": 157.8, "h": 111.8}, {"id": "card_33", "date": "1914–1918", "title": "WWI", "body": null, "x": 584.4, "y": 993.9, "w": 171.9, "h": 39.6}, {"id": "card_34", "date": null, "title": "Mental Geography", "body": "La geografia mentale è un processo di lunga durata che interiorizza una rappresentazione del mondo attraverso atlanti, scuole, media e piattaforme digitali.", "x": 204.4, "y": 1265.8, "w": 232.0, "h": 65.8}, {"id": "card_35", "date": null, "title": "The Aerial Gaze", "body": "La fotografia aerea e il satellite introducono uno sguardo verticale che diventa progressivamente normale, influenzando il modo in cui osserviamo città e territori.", "x": 565.4, "y": 1265.8, "w": 232.0, "h": 65.8}, {"id": "card_36", "date": null, "title": "Mediated Presence, Street View", "body": "Street View permette di esplorare un luogo senza essere fisicamente presenti, producendo una forma di presenza mediata che precede l’esperienza fisica del territorio.", "x": 1709.4, "y": 1265.8, "w": 232.0, "h": 65.8}, {"id": "new_kba", "date": "1997 · 2020", "title": "Kyl-Bingaman Amendment", "body": "Una legge statunitense limita a 2 metri la risoluzione delle immagini satellitari di Israele e dei Territori palestinesi: per oltre vent’anni Gaza appare sfocata su Google Earth. Nel 2020 il limite scende a 40 cm, perché fornitori non americani come Airbus vendevano già immagini più nitide.", "x": 1474.0, "y": 971.5, "w": 165.4, "h": 145.0}, {"id": "new_gulf", "date": "1991", "title": "Guerra del Golfo", "body": "La prima guerra combattuta con GPS e immagini satellitari arriva in TV come un videogioco: riprese dall’alto, mirini, nessun corpo. Jean Baudrillard pubblica La guerra del Golfo non ha avuto luogo.", "x": 1384.0, "y": 1127.3, "w": 165.4, "h": 100.3}, {"id": "new_nimbus", "date": "2021 · 2024", "title": "Project Nimbus", "body": "Google e Amazon firmano un contratto da 1,2 miliardi di dollari per fornire cloud e AI al governo e all’esercito israeliano. Nel 2024 Google licenzia 28 dipendenti che protestano con No Tech for Apartheid. Chi mappa le macerie è implicato in ciò che le produce.", "x": 1756.0, "y": 1080.6, "w": 165.4, "h": 122.5}, {"id": "new_lavender", "date": "Novembre 2023 · aprile 2024", "title": "The Gospel e Lavender", "body": "Le inchieste di +972 Magazine e Local Call rivelano sistemi di AI che generano bersagli a Gaza: The Gospel per gli edifici, Lavender per le persone. La mappa diventa una lista di obiettivi.", "x": 2056.0, "y": 1144.0, "w": 165.4, "h": 100.3}, {"id": "new_farocki", "date": "1944 · 1988", "title": "Harun Farocki, le foto aeree di Auschwitz", "body": "Le ricognizioni alleate fotografano Auschwitz nel 1944 senza riconoscerlo: le immagini vengono lette solo nel 1979. Farocki ne fa il film Immagini del mondo e iscrizione della guerra. Un’immagine può esistere senza mostrare.", "x": 736.0, "y": 1048.1, "w": 165.4, "h": 122.9}, {"id": "dubois", "date": "1900 1920", "title": "W. E. B. DU BOIS, DATA PORTRAITS", "body": "Dati, diagrammi e mappe costruiscono una rappresentazione alternativa della popolazione afroamericana, contro gli stereotipi prodotti da altri sistemi statistici e visivi.", "x": 522.0, "y": 1443.2, "w": 186.6, "h": 112.1}, {"id": "geoguessr", "date": "2013", "title": "GEOGUESSR", "body": "Street View diventa anche un sistema ludico di interpretazione geografica.", "x": 1366.0, "y": 1454.6, "w": 156.6, "h": 67.2}, {"id": "dollar", "date": "2016", "title": "DOLLAR STREET", "body": "Case di famiglie di tutto il mondo ordinate per reddito invece che per paese: lo spazio domestico diventa una mappa.", "x": 1554.0, "y": 1454.6, "w": 156.6, "h": 89.4}, {"id": "qtm", "date": "2017", "title": "QUEERING THE MAP", "body": "Le coordinate di una mappa digitale accolgono memorie ed esperienze queer: la mappa registra vissuti, non luoghi.", "x": 1742.0, "y": 1454.6, "w": 156.6, "h": 89.4, "tag": "CARTOGRAPHIC HACKING"}, {"id": "geomarkr", "date": "OGGI", "title": "GEOMARKR", "body": "L’interfaccia analizzata come dispositivo che insegna un determinato modo di leggere il paesaggio.", "x": 1930.0, "y": 1454.6, "w": 156.6, "h": 89.4}, {"id": "zionverse", "date": "2025", "title": "NOURA TAFECHE, THE ZIONVERSE", "body": "L’ecosistema digitale di immagini, video, meme e narrazioni attraverso cui un conflitto e un territorio vengono resi visibili e interpretati.", "x": 2118.0, "y": 1454.6, "w": 156.6, "h": 101.0, "tag": "MAPPING BEYOND MAPS", "gaza": true}, {"id": "colonial", "date": "XVI–XIX SECOLO", "title": "COLONIAL MAPPING", "body": "La cartografia diventa strumento per misurare, nominare, dividere e amministrare territori.", "x": 91.1, "y": 1188.0, "w": 264.0, "h": 67.2}, {"id": "brasile", "date": "XVI–XVIII SECOLO", "title": "BRASILE COLONIALE", "body": "Le conoscenze territoriali indigene vengono utilizzate, tradotte e progressivamente incorporate nelle rappresentazioni coloniali portoghesi. Quando una rappresentazione sostituisce un sistema di conoscenza con un altro?", "x": 66.0, "y": 1056.0, "w": 184.8, "h": 111.6}, {"id": "indig", "date": "ANNI 2010 · BRASILE", "title": "INDIGENOUS MAPPING", "body": "Uno strumento associato all’amministrazione coloniale viene riappropriato dalle comunità indigene per documentare e difendere i propri territori.", "x": 1148.0, "y": 1344.6, "w": 264.0, "h": 78.3}, {"id": "decatlas", "date": "2014", "title": "THE DECOLONIAL ATLAS", "body": "Progetto di counter-mapping che usa toponimi, orientamenti e sistemi geografici alternativi per mettere in discussione convenzioni cartografiche coloniali e occidentali.", "x": 1400.0, "y": 681.1, "w": 176.0, "h": 100.5}, {"id": "stick", "date": "1920", "title": "MARSHALL ISLANDS STICK CHARTS", "body": "Sistema di navigazione basato su onde, correnti e relazioni tra isole. Non riproduce il territorio, ma codifica conoscenze esperienziali dello spazio.", "x": 671.0, "y": 1540.0, "w": 209.4, "h": 78.3}, {"id": "radcliffe", "date": "1947", "title": "RADCLIFFE LINE", "body": "Cyril Radcliffe, mai stato in India, traccia in 36 giorni il confine tra India e Pakistan. Una linea sulla mappa diventa migrazioni, violenza e territori divisi: mappa → decisione → territorio.", "x": 1094.0, "y": 1065.4, "w": 184.8, "h": 89.2, "tag": "LA LINEA PRODUCE REALTÀ"}, {"id": "maldhari", "date": "BANNI, GUJARAT · DA SECOLI", "title": "MALDHARI", "body": "I pastori nomadi seguono acqua ed erba con i cammelli Kharai: la mappa è stagionale, relazionale, costruita attraverso il movimento, anche degli animali. La Radcliffe Line ne interrompe il nomadismo.", "x": 1170.0, "y": 1473.4, "w": 176.0, "h": 100.3, "tag": "MAP AS PROCESS"}, {"id": "enote", "date": "ZUNI, NEW MEXICO", "title": "JIM ENOTE, ZUNI MAP ART PROJECT", "body": "Mappe dipinte che sostituiscono scala e nord con storie, motivi e luoghi zuni: mappare per recuperare conoscenze, memoria e relazione con la terra.", "x": 1790.0, "y": 1353.4, "w": 255.2, "h": 78.1, "tag": "COUNTER-MAPPING AS RECLAMATION"}, {"id": "birdseye", "date": "", "title": "BIRD'S-EYE VIEW ≠ LIVED VIEW", "body": "Lo sguardo dall’alto non è neutrale: staccandosi dal suolo assume una posizione “oggettiva” lontana dal modo in cui il paesaggio è vissuto. «I am not a bird», risponde la madre di Jim Enote davanti alle foto aeree.", "x": 518.0, "y": 1346.0, "w": 220.0, "h": 75.2}, {"id": "colpower", "date": "", "title": "MAPPA COME POTERE COLONIALE", "body": "Nominare, delimitare e classificare rende il territorio amministrabile e appropriabile: «quando qualcosa può essere nominato e delimitato, diventa disponibile» (Bermúdez Obregón).", "x": 982.0, "y": 846.0, "w": 220.0, "h": 75.2}], "threads": {"gaza": ["card_6", "card_11", "card_22", "new_kba", "card_18", "card_32", "card_30", "card_20", "new_nimbus", "new_lavender", "card_14", "card_31"], "view": ["card", "card_33", "card_7", "new_farocki", "card_9", "card_10", "card_11", "new_gulf", "new_kba", "card_18", "card_31"], "proj": ["card_2", "card_28", "card_16", "card_19", "card_24"], "back": ["dubois", "card_8", "card_30", "card_12", "indig", "decatlas", "qtm", "card_20", "card_14"], "conv": [["card_27", "card_31"], ["zionverse", "card_31"], ["colonial", "card_31"]], "rel": [["radcliffe", "maldhari"]]}, "concept": ["card_25", "card_26", "card_27", "card_34", "card_35", "card_36", "birdseye", "colpower"], "images": [{"id": "i01", "file": "img/i01.jpg", "x": 885.0, "y": 1045.4, "w": 205.0, "h": 204.2}, {"id": "i02", "file": "img/i02.jpg", "x": 2046.0, "y": 155.8, "w": 273.7, "h": 184.8}, {"id": "i03", "file": "img/i03.jpg", "x": 1611.0, "y": 530.6, "w": 338.8, "h": 176.9}, {"id": "i04", "file": "img/i04.jpg", "x": 70.0, "y": 583.4, "w": 177.8, "h": 238.5}, {"id": "i05", "file": "img/i05.jpg", "x": 907.0, "y": 88.0, "w": 322.1, "h": 183.0}, {"id": "i06", "file": "img/i06.jpg", "x": 465.0, "y": 57.2, "w": 333.5, "h": 220.0}, {"id": "i07", "file": "img/i07.jpg", "x": 363.0, "y": 483.1, "w": 220.0, "h": 171.6}, {"id": "i08", "file": "img/i08.jpg", "x": 1155.0, "y": 144.3, "w": 153.1, "h": 153.1}, {"id": "i09", "file": "img/i09.jpg", "x": 132.0, "y": 193.6, "w": 210.3, "h": 177.8}, {"id": "i10", "file": "img/i10.jpg", "x": 1601.0, "y": 1406.0, "w": 285.0, "h": 194.0}, {"id": "i11", "file": "img/i11.jpg", "x": 298.0, "y": 274.6, "w": 262.2, "h": 142.6}, {"id": "i12", "file": "img/i12.jpg", "x": 832.3, "y": 232.3, "w": 135.4, "h": 218.1}, {"id": "i13", "file": "img/i13.jpg", "x": 983.0, "y": 1136.0, "w": 120.0, "h": 111.0}, {"id": "i14", "file": "img/i14.jpg", "x": 75.0, "y": 359.0, "w": 205.9, "h": 116.2}, {"id": "i15", "file": "img/i15.jpg", "x": 724.0, "y": 369.7, "w": 190.1, "h": 140.7}, {"id": "i16", "file": "img/i16.jpg", "x": 1324.0, "y": 144.3, "w": 205.9, "h": 205.9}, {"id": "i17", "file": "img/i17.jpg", "x": 1499.0, "y": 197.1, "w": 170.7, "h": 170.7}, {"id": "i18", "file": "img/i18.jpg", "x": 1212.0, "y": 357.3, "w": 138.2, "h": 111.8}, {"id": "i19", "file": "img/i19.jpg", "x": 695.0, "y": 542.1, "w": 432.1, "h": 213.8}, {"id": "i20", "file": "img/i20.jpg", "x": 519.0, "y": 658.2, "w": 250.8, "h": 178.6}, {"id": "i21", "file": "img/i21.jpg", "x": 2090.0, "y": 536.8, "w": 272.8, "h": 203.3}, {"id": "i22", "file": "img/i22.jpg", "x": 2223.0, "y": 451.4, "w": 144.3, "h": 125.0}, {"id": "i23", "file": "img/i23.jpg", "x": 980.0, "y": 369.6, "w": 114.4, "h": 112.6}, {"id": "i24", "file": "img/i24.jpg", "x": 1824.0, "y": 64.2, "w": 203.3, "h": 149.6}, {"id": "i25", "file": "img/i25.jpg", "x": 1700.0, "y": 261.4, "w": 107.4, "h": 139.0}, {"id": "i26", "file": "img/i26.jpg", "x": 1779.0, "y": 265.8, "w": 114.4, "h": 80.1}, {"id": "i27", "file": "img/i27.jpg", "x": 218.0, "y": 727.0, "w": 260.5, "h": 191.0}, {"id": "i28", "file": "img/i28.jpg", "x": 1185.0, "y": 1165.1, "w": 167.2, "h": 111.8}, {"id": "i29", "file": "img/i29.jpg", "x": 1319.0, "y": 1085.0, "w": 199.8, "h": 115.3}, {"id": "i30", "file": "img/i30.jpg", "x": 1555.0, "y": 1027.8, "w": 158.4, "h": 229.7}, {"id": "i31", "file": "img/i31.jpg", "x": 2131.0, "y": 994.4, "w": 222.6, "h": 181.3}, {"id": "i32", "file": "img/i32.jpg", "x": 267.0, "y": 986.0, "w": 130.0, "h": 190.7}, {"id": "i33", "file": "img/i33.jpg", "x": 479.0, "y": 1036.6, "w": 209.4, "h": 195.4}, {"id": "i34", "file": "img/i34.jpg", "x": 362.0, "y": 936.0, "w": 144.3, "h": 202.4}, {"id": "i35", "file": "img/i35.jpg", "x": 709.0, "y": 1113.2, "w": 176.9, "h": 233.2}, {"id": "i36", "file": "img/i36.jpg", "x": 1897.0, "y": 1156.3, "w": 137.3, "h": 137.3}, {"id": "i37", "file": "img/i37.jpg", "x": 1865.0, "y": 924.0, "w": 235.8, "h": 140.8}, {"id": "i38", "file": "img/i38.jpg", "x": 403.0, "y": 1185.4, "w": 183.9, "h": 180.4}, {"id": "i39", "file": "img/i39.jpg", "x": 673.0, "y": 859.8, "w": 128.5, "h": 167.2}, {"id": "i40", "file": "img/i40.jpg", "x": 827.0, "y": 782.3, "w": 156.6, "h": 242.9}, {"id": "i41", "file": "img/i41.jpg", "x": 1209.0, "y": 791.1, "w": 228.8, "h": 166.3}, {"id": "i42", "file": "img/i42.jpg", "x": 1652.0, "y": 726.0, "w": 242.0, "h": 162.8}, {"id": "i43", "file": "img/i43.jpg", "x": 2010.0, "y": 1336.0, "w": 189.0, "h": 141.0}, {"id": "i44", "file": "img/i44.png", "x": 1276.0, "y": 448.8, "w": 322.1, "h": 180.4}, {"id": "i45", "file": "img/i45.jpg", "x": 1419.0, "y": 1331.0, "w": 246.0, "h": 184.0}, {"id": "i46", "file": "img/i46.jpg", "x": 372.0, "y": 1392.0, "w": 146.0, "h": 183.0}, {"id": "i47", "file": "img/i47.jpg", "x": 100.0, "y": 1350.0, "w": 159.0, "h": 202.0}, {"id": "i48", "file": "img/i48.jpg", "x": 247.0, "y": 1435.0, "w": 131.0, "h": 164.0}, {"id": "i49", "file": "img/i49.jpg", "x": 66.0, "y": 882.0, "w": 244.0, "h": 171.0}, {"id": "i50", "file": "img/i50.jpg", "x": 743.0, "y": 1389.0, "w": 218.0, "h": 137.0}, {"id": "i51", "file": "img/i51.png", "x": 872.0, "y": 1452.0, "w": 329.0, "h": 157.0}, {"id": "i52", "file": "img/i52.jpg", "x": 994.0, "y": 1359.0, "w": 147.0, "h": 181.0}]}</script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-const D = JSON.parse(document.getElementById('data').textContent);
-const MW = 2384, MH = 1684, CX = 1185, CY = 841;
-const FX0 = 65, FX1 = 2305;
-const ERAS = [[65, 508, '1492 – 1850'], [508, 926, '1850 – 1945'], [926, 1354, '1945 – 1968'], [1354, 2305, '1968 – 2026']];
-const BANDS = [[49, 607, 'TECNOLOGIA'], [607, 942, 'RAPPRESENTAZIONE'], [942, 1258, 'POLITICA'], [1258, 1431, 'CULTURA'], [1431, 1628, 'PRATICHE']];
-const C = { paper: 0xFBFBF9, ink: '#141414', ink2: '#2A2A2A', g1: '#6B6B6B', gaza: '#F2D13A', view: '#FF272B', proj: '#26FF00', back: '#2B59FF', rel: '#8A8A8A' };
-const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const bandOf = y => y < 607 ? 0 : y < 942 ? 1 : y < 1258 ? 2 : y < 1431 ? 3 : 4;
+const D = window.DATA, G = D.geo, WT = G.WT, DEP = G.DEP;
+const COL = { view: '#FF272B', platform: '#F2D13A', border: '#141414', back: '#2B59FF' };
+const THREAD_W = { view: 2.6, platform: 4.2, border: 2.3, back: 2.6 };
+const LAYER = [
+  { code: 'L01', name: 'TECNOLOGIA' }, { code: 'L02', name: 'RAPPRESENTAZIONE' }, { code: 'L03', name: 'POLITICA' },
+  { code: 'L04', name: 'CULTURA' }, { code: 'L05', name: 'PRATICHE' }, { code: 'L00', name: 'GAZA 2023–2026' },
+];
+const THICK = L => L === 5 ? 46 : 9;
+const GAP = 330;
 
-// e = explosion amount 0 (flat map) → 1 (exploded world)
-let e = 0, eTarget = 0;
-const GAP = 260;               // extra distance between bands along Z
-const LIFT = 70;               // slabs step up slightly towards the back
-const CARD_Y = 400;            // height of the floating cards
-const zOf = (y, k = e) => (y - CY) + k * GAP * (bandOf(Math.min(y, 1627)) - 2);
-const slabY = (b, k = e) => k * LIFT * (4 - b);
-const xOf = x => x - CX;
-
-// ---------- three setup
+// ---------------------------------------------------------------- setup
 const host = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
-renderer.setClearColor(C.paper);
+renderer.setClearColor(0x000000, 0);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 host.appendChild(renderer.domElement);
 const labelR = new CSS2DRenderer({ element: document.getElementById('labels') });
 labelR.setSize(innerWidth, innerHeight);
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(C.paper, 5200, 10500);
-const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, 10, 30000);
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 10, 40000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.07;
-controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 200; controls.maxDistance = 9000;
-controls.screenSpacePanning = true;
+controls.maxPolarAngle = Math.PI * 0.495; controls.minDistance = 250; controls.maxDistance = 9000;
+controls.enabled = false;
 
-const loader = new THREE.TextureLoader();
-const tex = src => { const t = loader.load(src); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; };
+const state = { gap: 0, gapT: 0, touring: false, step: 0, intro: true };
+const introY = [0, 0, 0, 0, 0, 0];
+const layerY = L => state.intro ? introY[L] : (5 - L) * state.gap;
+const topY = L => layerY(L) + THICK(L);
+const W = (u, v, y) => new THREE.Vector3(u - WT / 2, y, v - DEP / 2);
 
-// ---------- endless floor: the tidal chart behind the 2D map, placed as in the SVG and mirrored outwards
+// soft ground shadow
 {
-  const ft = tex('img/floor_tile.jpg');
-  ft.wrapS = ft.wrapT = THREE.MirroredRepeatWrapping;
-  const TW = 3269.03, TH_ = 1947.78, N = 9;
-  ft.repeat.set(N, N);
-  const fl = new THREE.Mesh(new THREE.PlaneGeometry(TW * N, TH_ * N), new THREE.MeshBasicMaterial({ map: ft }));
-  fl.rotation.x = -Math.PI / 2;
-  // tile spans x -316 → 2953, y -116 → 1832 in map units
-  fl.position.set(xOf(-316 + TW / 2), -12, (-116 + TH_ / 2) - CY);
-  scene.add(fl);
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(128, 128, 10, 128, 128, 128); gr.addColorStop(0, 'rgba(0,0,0,.22)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(WT * 1.35, DEP * 2.2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = -40; scene.add(m);
 }
-// ---------- floor: the 2D map, cut into the four bands (slabs)
-const ghost = tex('img/ghost.jpg');
-const slabs = [];
-const ruleMat = new THREE.LineBasicMaterial({ color: 0x141414 });
-const thinMat = new THREE.LineBasicMaterial({ color: 0xD6D6D6 });
-BANDS.forEach(([y0, y1, name], b) => {
-  const w = FX1 - FX0, h = y1 - y0;
-  const g = new THREE.PlaneGeometry(w, h);
-  const uv = g.attributes.uv, pos = g.attributes.position;
-  for (let i = 0; i < uv.count; i++) {
-    const mx = FX0 + (pos.getX(i) + w / 2), my = y0 + (h / 2 - pos.getY(i));
-    uv.setXY(i, mx / MW, 1 - my / MH);
-  }
-  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: ghost }));
-  m.rotation.x = -Math.PI / 2;
-  const grp = new THREE.Group(); grp.add(m);
-  // slab outline + era dividers
-  const hw = w / 2, hh = h / 2, pts = [];
-  pts.push(-hw, 0, -hh, hw, 0, -hh, hw, 0, -hh, hw, 0, hh, hw, 0, hh, -hw, 0, hh, -hw, 0, hh, -hw, 0, -hh);
-  const outline = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)), ruleMat);
-  outline.position.y = 0.6; grp.add(outline);
-  const div = [];
-  for (const x of [508, 926, 1354]) div.push(x - FX0 - hw, 0, -hh, x - FX0 - hw, 0, hh);
-  const dl = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(div, 3)), thinMat);
-  dl.position.y = 0.5; grp.add(dl);
-  // slab thickness (a thin paper edge)
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(w, 6, h), new THREE.MeshBasicMaterial({ color: 0xEDEDEA }));
-  edge.position.y = -3.5; grp.add(edge);
-  scene.add(grp);
-  const lab = document.createElement('div'); lab.className = 'band'; lab.textContent = name;
-  const lo = new CSS2DObject(lab); lo.center.set(1, 0.5); scene.add(lo);
-  slabs.push({ grp, y0, y1, b, lo, lab });
+
+// ---------------------------------------------------------------- slabs
+const shape = new THREE.Shape(G.poly.map(([u, v]) => new THREE.Vector2(u - WT / 2, -(v - DEP / 2))));
+const loader = new THREE.TextureLoader();
+const layers = [];
+let pending = 6;
+for (let L = 0; L < 6; L++) {
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: THICK(L), bevelEnabled: false, curveSegments: 1 });
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) + WT / 2) / WT, 1 - (pos.getZ(i) + DEP / 2) / DEP);
+  const tex = loader.load(window.TEX[L], () => { if (--pending === 0) ready(); });
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const topM = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+  const sideM = new THREE.MeshBasicMaterial({ color: L === 5 ? 0x161616 : 0xD3D3CE, transparent: true });
+  const mesh = new THREE.Mesh(geo, [topM, sideM]); mesh.userData.L = L;
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: 0x141414, transparent: true, opacity: .35 }));
+  const grp = new THREE.Group(); grp.add(mesh, edges); scene.add(grp);
+  const el = document.createElement('div'); el.className = 'band'; el.textContent = `${LAYER[L].code} · ${LAYER[L].name}`;
+  const lab = new CSS2DObject(el); lab.center.set(0, 0.5); scene.add(lab);
+  layers.push({ grp, mesh, topM, sideM, edgeM: edges.material, lab, el, op: 1, opT: 1 });
+}
+const cityLabs = G.cities.map(([n, u, v]) => { const el = document.createElement('div'); el.className = 'city'; el.textContent = n; const o = new CSS2DObject(el); o.center.set(0, 1.3); scene.add(o); return { o, el, u, v }; });
+function vMax(u) {
+  const P = G.poly; let hits = [];
+  for (let i = 0; i < P.length; i++) { const [u1, v1] = P[i], [u2, v2] = P[(i + 1) % P.length]; if ((u1 - u) * (u2 - u) <= 0 && u1 !== u2) hits.push(v1 + (u - u1) / (u2 - u1) * (v2 - v1)); }
+  return hits.length ? Math.max(...hits) : DEP / 2;
+}
+const ticks = G.ticks.map(([y, u]) => { const el = document.createElement('div'); el.className = 'tick'; el.textContent = y; const o = new CSS2DObject(el); o.center.set(0.5, -0.2); scene.add(o); return { o, el, u, v: vMax(u) + 40 }; });
+
+// hover outline for images
+const hoverBox = new THREE.LineLoop(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x111111, transparent: true, opacity: 0, depthTest: false }));
+hoverBox.renderOrder = 20; scene.add(hoverBox);
+
+// ---------------------------------------------------------------- markers
+function spriteTex(kind) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.translate(64, 64); g.lineJoin = 'round';
+  if (kind === 'view') { g.beginPath(); g.arc(0, 0, 34, 0, 7); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 12; g.strokeStyle = COL.view; g.stroke(); }
+  else if (kind === 'platform') { g.beginPath(); g.arc(0, 0, 40, 0, 7); g.fillStyle = COL.platform; g.fill(); g.lineWidth = 9; g.strokeStyle = '#141414'; g.stroke(); }
+  else if (kind === 'border') { g.fillStyle = '#141414'; g.beginPath(); g.roundRect(-34, -34, 68, 68, 10); g.fill(); }
+  else if (kind === 'back') { g.beginPath(); g.moveTo(0, -44); g.lineTo(44, 0); g.lineTo(0, 44); g.lineTo(-44, 0); g.closePath(); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 10; g.strokeStyle = COL.back; g.stroke(); }
+  else if (kind === 'concept') { g.beginPath(); g.moveTo(0, -48); g.lineTo(48, 0); g.lineTo(0, 48); g.lineTo(-48, 0); g.closePath(); g.fillStyle = '#141414'; g.fill(); g.lineWidth = 6; g.strokeStyle = '#fff'; g.stroke(); }
+  else if (kind === 'hub') { g.beginPath(); g.arc(0, 0, 56, 0, 7); g.fillStyle = COL.platform; g.fill(); g.lineWidth = 9; g.strokeStyle = '#141414'; g.stroke(); g.beginPath(); g.arc(0, 0, 18, 0, 7); g.fillStyle = '#141414'; g.fill(); }
+  else { g.beginPath(); g.arc(0, 0, 22, 0, 7); g.fillStyle = '#141414'; g.fill(); g.lineWidth = 8; g.strokeStyle = '#fff'; g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const TEXS = {}; ['view', 'platform', 'border', 'back', 'concept', 'hub', 'dot'].forEach(k => TEXS[k] = spriteTex(k));
+const nodes = D.nodes.map(n => {
+  const kind = n.hub ? 'hub' : n.concept ? 'concept' : (n.threads[0] || 'dot');
+  const mat = new THREE.SpriteMaterial({ map: TEXS[kind], transparent: true, depthTest: false, opacity: 0 });
+  const sp = new THREE.Sprite(mat); sp.renderOrder = 10;
+  const s = kind === 'hub' ? 64 : kind === 'dot' ? 20 : kind === 'concept' ? 32 : 30; sp.scale.set(s, s, 1); sp.userData.n = n.i;
+  scene.add(sp);
+  const el = document.createElement('div'); el.className = 'lab' + (n.pal ? ' pal' : ''); el.textContent = n.title;
+  const lab = new CSS2DObject(el); lab.center.set(0.5, 1.6); scene.add(lab);
+  return { ...n, sp, mat, el, lab, op: 0, opT: 0 };
 });
-// ---------- the year line: hinged on the back edge, it rises into a wall
-const WALL_W = FX1 - FX0, STRIP_H = 60, WALL_H = 420;
-const wall = new THREE.Group(); scene.add(wall);
-function stripTexture() {
-  const k = 3, cv = document.createElement('canvas'); cv.width = WALL_W * k; cv.height = STRIP_H * k;
-  const g = cv.getContext('2d'); g.scale(k, k);
-  const my = STRIP_H / 2;
-  g.strokeStyle = '#141414'; g.lineWidth = 1.4;
-  g.beginPath(); g.moveTo(0, my); g.lineTo(WALL_W, my);
-  for (const x of [FX0, 508, 926, 1354, FX1]) { const xx = Math.min(WALL_W - 0.5, Math.max(0.5, x - FX0)); g.moveTo(xx, my - 9); g.lineTo(xx, my + 9); }
-  g.stroke();
-  g.font = '700 24px "IBM Plex Mono"'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (const [x0, x1, t] of ERAS) {
-    const cx = (x0 + x1) / 2 - FX0, w = g.measureText(t).width + 18;
-    g.fillStyle = '#FBFBF9'; g.fillRect(cx - w / 2, my - 16, w, 32);
-    g.fillStyle = '#141414'; g.fillText(t, cx, my + 0.5);
-  }
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
-}
-function bodyTexture() {
-  const k = 1, cv = document.createElement('canvas'); cv.width = WALL_W * k; cv.height = 64;
-  const g = cv.getContext('2d');
-  g.fillStyle = '#FBFBF9'; g.fillRect(0, 0, cv.width, cv.height);
-  g.fillStyle = '#D6D6D6';
-  for (const x of [508, 926, 1354]) g.fillRect((x - FX0) * k, 0, 1, cv.height);
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-let strip, body, bodyEdge;
-function buildWall() {
-  strip = new THREE.Mesh(new THREE.PlaneGeometry(WALL_W, STRIP_H), new THREE.MeshBasicMaterial({ map: stripTexture(), side: THREE.DoubleSide, transparent: true, depthWrite: false }));
-  // see-through wall: only its outline
-  body = new THREE.Object3D();
-  bodyEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(WALL_W, 1)), ruleMat); 
-  body.add(bodyEdge);
-  wall.add(body, strip);
-}
+const P3 = n => W(n.u, n.v, topY(n.L) + 3);
 
-
-// ---------- images: hinge on their lower edge, pop up like a pop-up book
-const images = D.images.map((im, i) => {
-  const t = tex(im.file);
-  const png = im.file.endsWith('.png');
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(im.w, im.h), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide, transparent: png, alphaTest: png ? 0.05 : 0 }));
-  mesh.position.y = im.h / 2;
-  if (!png) { const fr = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({ color: 0x141414, transparent: true, opacity: 0.35 })); mesh.add(fr); }
-  const hinge = new THREE.Group(); hinge.add(mesh); scene.add(hinge);
-  mesh.userData = { kind: 'img', im };
-  return { im, hinge, mesh, band: bandOf(im.y + im.h), order: i, delay: (im.x - FX0) / (FX1 - FX0) };
+// ---------------------------------------------------------------- threads
+const threads = D.threads.map(t => {
+  const m = new THREE.MeshBasicMaterial({ color: COL[t.key], transparent: true, opacity: 0 });
+  const mc = new THREE.MeshBasicMaterial({ color: 0x141414, transparent: true, opacity: 0, side: THREE.BackSide });
+  const mesh = new THREE.Mesh(new THREE.BufferGeometry(), m); mesh.renderOrder = 5;
+  const casing = t.key === 'platform' ? new THREE.Mesh(new THREE.BufferGeometry(), mc) : null;
+  scene.add(mesh); if (casing) scene.add(casing);
+  return { ...t, m, mc, mesh, casing, op: 0, opT: 0 };
 });
+function curveOf(seq) {
+  const path = new THREE.CurvePath();
+  const pts = seq.map(i => P3(nodes[i]));
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1], dy = b.y - a.y;
+    const c1 = new THREE.Vector3(a.x + (b.x - a.x) * .18, a.y + dy * .5, a.z + (b.z - a.z) * .18);
+    const c2 = new THREE.Vector3(b.x - (b.x - a.x) * .18, b.y - dy * .5, b.z - (b.z - a.z) * .18);
+    if (Math.abs(dy) < 1) { c1.y += 14; c2.y += 14; }
+    path.add(new THREE.CubicBezierCurve3(a, c1, c2, b));
+  }
+  return path;
+}
+const plumbM = new THREE.LineBasicMaterial({ color: 0xE2BC12, transparent: true, opacity: 0 });
+const plumb = new THREE.LineSegments(new THREE.BufferGeometry(), plumbM); scene.add(plumb);
+const plumbDots = nodes.filter(n => n.pal && !n.hub && n.L !== 5).map(n => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TEXS.platform, transparent: true, opacity: 0 })); sp.scale.set(11, 11, 1); scene.add(sp); return { n, sp }; });
+let threadsBuilt = -1;
+function rebuild(full) {
+  layers.forEach((l, L) => { l.grp.position.y = layerY(L); l.lab.position.copy(W(WT + 30, DEP * 0.55, topY(L))); });
+  nodes.forEach(n => { const p = P3(n); n.sp.position.copy(p); n.lab.position.copy(p); });
+  if (full || threads.some(t => t.op > 0.01)) {
+    threads.forEach(t => {
+      const c = curveOf(t.seq), seg = t.seq.length * 40;
+      t.mesh.geometry.dispose(); t.mesh.geometry = new THREE.TubeGeometry(c, seg, THREAD_W[t.key] * .5, 6, false);
+      if (t.casing) { t.casing.geometry.dispose(); t.casing.geometry = new THREE.TubeGeometry(c, seg, THREAD_W[t.key] * .5 + 1.4, 6, false); }
+    });
+  }
+  const arr = [];
+  plumbDots.forEach(({ n, sp }) => { const p = P3(n); const b = W(n.u, n.v, topY(5) + 1); arr.push(p.x, p.y, p.z, b.x, b.y, b.z); sp.position.copy(b); });
+  plumb.geometry.dispose(); plumb.geometry = new THREE.BufferGeometry(); plumb.geometry.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+  cityLabs.forEach(c => c.o.position.copy(W(c.u, c.v, topY(5))));
+  ticks.forEach(t => t.o.position.copy(W(t.u, t.v, topY(5))));
+}
+rebuild(true);
 
-// ---------- cards: drawn on canvas in the same style as the 2D map
-const S = 5; // texture pixels per map unit
-const threadOf = {}; for (const k in D.threads) for (const id of D.threads[k]) (threadOf[id] ||= []).push(k);
-function wrap(ctx, text, maxW) {
-  const words = text.split(/\s+/), lines = []; let cur = '';
-  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
-  if (cur) lines.push(cur); return lines;
+// ---------------------------------------------------------------- camera helpers
+const DEG = Math.PI / 180;
+let anim = null;
+function framing(pts, az, el, pad = 1.15, lift = 0, shift) {
+  const box = new THREE.Box3().setFromPoints(pts);
+  const c = box.getCenter(new THREE.Vector3()); c.y += lift;
+  let r = 0; pts.forEach(p => r = Math.max(r, p.distanceTo(c))); r = Math.max(r, 120);
+  const vf = camera.fov * DEG / 2, hf = Math.atan(Math.tan(vf) * camera.aspect);
+  const narrow = innerWidth < 820 ? 1.25 : 1;
+  const d = r / Math.sin(Math.min(vf, hf)) * pad * narrow;
+  const dir = new THREE.Vector3(Math.cos(el * DEG) * Math.cos(az * DEG), Math.sin(el * DEG), Math.cos(el * DEG) * Math.sin(az * DEG));
+  const sh = shift ?? (state.touring && innerWidth > 820 ? 0.2 : 0);
+  const right = new THREE.Vector3().crossVectors(dir.clone().negate(), new THREE.Vector3(0, 1, 0));
+  if (right.lengthSq() < 1e-4) right.set(0, 0, -1); right.normalize();
+  const tgt = c.clone().add(right.multiplyScalar(-sh * d * Math.tan(hf)));
+  return { pos: tgt.clone().addScaledVector(dir, d), tgt };
 }
-function drawCard(c) {
-  const concept = D.concept.includes(c.id), gaza = c.id === 'card_31', onGaza = (threadOf[c.id] || []).includes('gaza') || !!c.gaza;
-  const tagH = c.tag ? 13 : 0;
-  const w = Math.max(c.w, 150), pad = 7, inner = w - pad * 2;
-  const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
-  // measure first
-  ctx.font = `700 9.5px "IBM Plex Mono"`; const tl = wrap(ctx, '[' + c.title.toUpperCase() + ']', inner);
-  ctx.font = `400 7.6px Inter`; const bl = wrap(ctx, c.body || '', inner);
-  const dateH = c.date ? 12 : 0, titleH = tl.length * 11.5, bodyH = bl.length * 10.4;
-  const h0 = concept ? (titleH + 8) + 6 + bodyH + 4 : pad + dateH + titleH + 4 + bodyH + pad - 2;
-  const h = h0 + tagH;
-  cv.width = Math.round(w * S); cv.height = Math.round(h * S);
-  ctx.scale(S, S); ctx.textBaseline = 'top';
-  if (c.tag) { ctx.font = `700 6.8px "IBM Plex Mono"`; const tw = ctx.measureText(c.tag).width + 10; ctx.fillStyle = C.ink; ctx.fillRect(0, 0, tw, tagH - 1); ctx.fillStyle = '#FFFFFF'; ctx.fillText(c.tag, 5, 3); ctx.translate(0, tagH); }
-  if (concept) {
-    ctx.fillStyle = '#FBFBF9'; ctx.fillRect(0, 0, w, h0);
-    ctx.fillStyle = C.ink; ctx.fillRect(0, 0, w, titleH + 8);
-    ctx.fillStyle = '#FBFBF9'; ctx.font = `700 9.5px "IBM Plex Mono"`;
-    tl.forEach((l, i) => ctx.fillText(l, pad, 4.5 + i * 11.5));
-    ctx.fillStyle = C.ink2; ctx.font = `400 7.6px Inter`;
-    bl.forEach((l, i) => ctx.fillText(l, pad - 2, titleH + 14 + i * 10.4));
-  } else {
-    ctx.fillStyle = gaza ? C.gaza : '#FFFFFF'; ctx.fillRect(0, 0, w, h0);
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.strokeRect(0.5, 0.5, w - 1, h0 - 1);
-    if (onGaza && !gaza) { ctx.fillStyle = C.gaza; ctx.fillRect(0, 0, 3.5, h0); }
-    let y = pad;
-    if (c.date) {
-      ctx.font = `500 7.4px "IBM Plex Mono"`;
-      const dt = c.date.toUpperCase(), dw = ctx.measureText(dt).width;
-      if (onGaza && !gaza) { ctx.fillStyle = C.gaza; ctx.fillRect(pad - 2, y - 1.5, dw + 4, 10); }
-      ctx.fillStyle = gaza || onGaza ? C.ink : C.g1; ctx.fillText(dt, pad, y); y += dateH;
-    }
-    ctx.fillStyle = C.ink; ctx.font = `700 9.5px "IBM Plex Mono"`;
-    tl.forEach((l, i) => ctx.fillText(l, pad, y + i * 11.5)); y += titleH + 4;
-    ctx.fillStyle = C.ink2; ctx.font = `400 7.6px Inter`;
-    bl.forEach((l, i) => ctx.fillText(l, pad, y + i * 10.4));
-  }
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  return { t, w, h };
-}
-const cards = [], byId = {};
-const qFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
-const stemMat = new THREE.LineBasicMaterial({ color: 0x9A9A9A, transparent: true, opacity: 0 });
-function buildCards() {
-  for (const c of D.cards) {
-    const { t, w, h } = drawCard(c);
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide, transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
-    mesh.renderOrder = 10; mesh.visible = false;
-    scene.add(mesh);
-    const stem = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), stemMat);
-    scene.add(stem);
-    const dot = new THREE.Mesh(new THREE.CircleGeometry(4, 20), new THREE.MeshBasicMaterial({ color: 0x141414, transparent: true, opacity: 0 }));
-    dot.rotation.x = -Math.PI / 2; scene.add(dot);
-    const onGaza = (threadOf[c.id] || []).includes('gaza'), isGaza = c.id === 'card_31';
-    const nr = isGaza ? 10 : onGaza ? 6 : 4.5;
-    const node = new THREE.Mesh(new THREE.SphereGeometry(nr, 18, 12), new THREE.MeshBasicMaterial({ color: onGaza ? C.gaza : 0x141414 }));
-    if (onGaza) node.add(new THREE.Mesh(new THREE.SphereGeometry(nr * 1.22, 18, 12), new THREE.MeshBasicMaterial({ color: 0x141414, side: THREE.BackSide })));
-    node.renderOrder = 3; scene.add(node);
-    const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
-    const k = { c, mesh, stem, dot, node, show: 0, w, h, cx, cy, band: bandOf(cy), delay: (cx - FX0) / (FX1 - FX0), hover: 0, yExtra: (c.id === 'card_31') ? 160 : 0 };
-    mesh.userData = { kind: 'card', k }; node.userData = { kind: 'node', k };
-    cards.push(k); byId[c.id] = k;
-  }
-}
+function flyTo({ pos, tgt }, ms = 1600) { anim = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: tgt, s: performance.now(), ms }; }
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const allPts = () => { const a = []; for (let L = 0; L < 6; L++) G.poly.forEach(([u, v], i) => i % 3 === 0 && a.push(W(u, v, topY(L)))); return a; };
+const layerPts = L => G.poly.map(([u, v]) => W(u, v, topY(L)));
+const withGap = (g, fn) => { const g0 = state.gap, i0 = state.intro; state.gap = g; state.intro = false; const r = fn(); state.gap = g0; state.intro = i0; return r; };
+const HOME = () => withGap(GAP, () => framing(allPts(), 45, 28, 0.98, 0, innerWidth > 820 ? -0.1 : 0));
 
-// ---------- threads
-const TH = {
-  gaza: { col: C.gaza, tube: 2.6, on: true },
-  view: { col: C.view, tube: 1.1, on: true },
-  proj: { col: C.proj, tube: 0, on: true },
-  back: { col: C.back, tube: 1.6, on: true },
-  conv: { col: C.gaza, tube: 0, dash: [16, 9], on: true },
-  rel: { col: C.rel, tube: 0, dash: [6, 6], on: true },
-};
-const threads = {};
-function buildThreads() {
-  for (const k in D.threads) {
-    const raw = D.threads[k]; const pairs = Array.isArray(raw[0]);
-    const ids = pairs ? [] : raw.filter(id => byId[id]);
-    const list = pairs ? raw.filter(p => byId[p[0]] && byId[p[1]]) : ids.slice(0, -1).map((id, i) => [id, ids[i + 1]]);
-    const grp = new THREE.Group(); scene.add(grp);
-    const segs = [];
-    for (const [ia, ib] of list) {
-      let obj;
-      if (TH[k].tube) obj = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: TH[k].col }));
-      else { const dd = TH[k].dash || [14, 9]; obj = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(1, 0, 0)]), new THREE.LineDashedMaterial({ color: TH[k].col, dashSize: dd[0], gapSize: dd[1] })); }
-      obj.renderOrder = 1;
-      grp.add(obj); segs.push({ obj, a: byId[ia], b: byId[ib] });
-    }
-    // knots where the yellow thread touches a card
-    const knots = [];
-    if (false) for (const id of ids) {
-      const s = new THREE.Mesh(new THREE.SphereGeometry(6, 16, 12), new THREE.MeshBasicMaterial({ color: C.gaza }));
-      const r = new THREE.Mesh(new THREE.SphereGeometry(7.3, 16, 12), new THREE.MeshBasicMaterial({ color: 0x141414, side: THREE.BackSide }));
-      s.add(r); s.renderOrder = 3; grp.add(s); knots.push({ s, card: byId[id] });
-    }
-    threads[k] = { grp, segs, knots };
-  }
+// ---------------------------------------------------------------- focus / fading
+function setFocus(f) {
+  layers.forEach((l, L) => { l.opT = !f.layers || f.layers.includes(L) ? 1 : 0.07; l.el.classList.toggle('on', !!f.bands && (!f.layers || f.layers.includes(L))); });
+  threads.forEach(t => t.opT = !f.threads || f.threads.includes(t.key) ? 1 : 0.06);
+  const nodeSet = f.nodes ? new Set(f.nodes) : null;
+  nodes.forEach(n => {
+    const inLayer = !f.layers || f.layers.includes(n.L);
+    const inThread = f.threads ? n.threads.some(k => f.threads.includes(k)) : true;
+    n.opT = (nodeSet ? nodeSet.has(n.i) : (inLayer && (f.threads ? inThread : true))) ? 1 : 0.1;
+    n.el.classList.toggle('on', !!(f.labels && f.labels.includes(n.i)));
+  });
+  plumbM.userData.opT = f.plumb === false ? 0.06 : 0.9;
+  ticks.forEach(t => t.el.classList.toggle('on', !!f.ticks));
+  cityLabs.forEach(c => c.el.classList.toggle('on', !!f.cities));
 }
-const anchor = (k, out) => out.copy(k.node.position);
-const A = new THREE.Vector3(), B = new THREE.Vector3();
-function updateThreads() {
-  for (const k in threads) {
-    const T = threads[k];
-    T.grp.visible = TH[k].on;
-    for (const s of T.segs) {
-      anchor(s.a, A); anchor(s.b, B);
-      if (TH[k].tube) {
-        s.obj.geometry.dispose();
-        s.obj.geometry = new THREE.TubeGeometry(new THREE.LineCurve3(A.clone(), B.clone()), 1, TH[k].tube, 6, false);
-      } else {
-        s.obj.geometry.setFromPoints([A.clone(), B.clone()]); s.obj.computeLineDistances();
-      }
-    }
-    for (const n of T.knots) n.s.position.copy(n.card.mesh.position);
-  }
-}
+const FREE = { layers: null, threads: null, nodes: null, labels: [], plumb: null };
 
-// ---------- place everything for the current e
-const tmpQ = new THREE.Quaternion(), yawQ = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
-const stagger = (d, k) => THREE.MathUtils.clamp(k * 1.6 - d * 0.6, 0, 1); // left-to-right ripple
-const smooth = t => t * t * (3 - 2 * t);
-function layout() {
-  for (const s of slabs) {
-    const zc = zOf((s.y0 + s.y1) / 2 - 0.0001 + 0.0001), yy = slabY(s.b);
-    s.grp.position.set(xOf((FX0 + FX1) / 2), yy, zOf((s.y0 + s.y1) / 2));
-    s.lo.position.set(xOf(FX0) - 26, yy, zc);
-  }
-  if (strip) {
-    const kw = smooth(THREE.MathUtils.clamp(e * 1.25, 0, 1));
-    wall.position.set(xOf((FX0 + FX1) / 2), slabY(0) + 0.4, zOf(49));
-    wall.rotation.x = -(1 - kw) * Math.PI / 2;
-    const bh = Math.max(0.01, WALL_H * kw);
-    body.scale.y = bh; body.position.y = bh / 2; body.visible = kw > 0.01;
-    strip.position.y = bh + STRIP_H / 2; strip.position.z = 0.5;
-  }
+// ---------------------------------------------------------------- tour
+const byT = s => nodes.filter(n => n.title.toLowerCase().includes(s.toLowerCase())).map(n => n.i);
+const one = s => byT(s)[0];
+const inLayer = L => nodes.filter(n => n.L === L).map(n => n.i);
+const inThread = k => D.threads.find(t => t.key === k).seq;
+const HUB = nodes.find(n => n.hub).i;
+const ptsOf = ids => ids.map(i => P3(nodes[i]));
+const sw = k => `<span class="sw" style="background:${COL[k]}"></span>`;
 
-  for (const I of images) {
-    const k = smooth(stagger(I.delay, e));
-    const im = I.im;
-    I.hinge.position.set(xOf(im.x + im.w / 2), slabY(I.band) + 1 + I.order * 0.02 * (1 - k), zOf(im.y + im.h));
-    I.hinge.rotation.x = -(1 - k) * Math.PI / 2;
-  }
-  for (const K of cards) {
-    const k = smooth(stagger(K.delay, e));
-    const flatY = slabY(K.band) + 3, z = zOf(K.cy);
-    const y = THREE.MathUtils.lerp(flatY, slabY(K.band) + CARD_Y + K.yExtra, k);
-    K.mesh.position.set(xOf(K.cx), y, z);
-    const yaw = Math.atan2(camera.position.x - K.mesh.position.x, camera.position.z - K.mesh.position.z);
-    yawQ.setFromAxisAngle(up, yaw);
-    K.mesh.quaternion.slerpQuaternions(qFlat, yawQ, k);
-    const base = new THREE.Vector3(xOf(K.cx), slabY(K.band) + 0.8, z);
-    K.stem.geometry.setFromPoints([base, new THREE.Vector3(base.x, y, z)]);
-    K.dot.position.copy(base); K.dot.material.opacity = k;
-    K.node.position.copy(K.mesh.position);
-    K.mesh.visible = K.show > 0.01; K.mesh.material.opacity = K.show;
-    K.mesh.scale.setScalar(1.5 * (0.9 + 0.1 * K.show));
-    if (k > 0.5) K.mesh.position.y += K.h * 0.75 + 16; // caption sits just above its node
-  }
-  stemMat.opacity = smooth(THREE.MathUtils.clamp(e * 1.3 - 0.3, 0, 1)) * 0.9;
-  for (const s of slabs) s.lab.style.opacity = 1;
-  updateThreads();
-}
-
-// ---------- camera views
-const VIEWS = {
-  persp: [[-2050, 2250, 3350], [-60, 160, 260]],
-  top: [[0, 3900, 1], [0, 0, 0]],
-  front: [[0, 1150, 3900], [0, 260, 150]],
-  side: [[-3700, 900, 200], [0, 260, 0]],
-};
-let fly = null;
-function flyTo(pos, tgt, ms = 1400) {
-  if (reduce) { camera.position.copy(pos); controls.target.copy(tgt); return; }
-  fly = { t0: performance.now(), ms, p0: camera.position.clone(), q0: controls.target.clone(), p1: pos, q1: tgt };
-}
-function setView(v) {
-  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v));
-  const [p, t] = VIEWS[v]; flyTo(new THREE.Vector3(...p), new THREE.Vector3(...t));
-}
-document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
+const STEPS = [
+  { k: 'Introduzione', t: 'Mappare la realtà',
+    p: 'Questa mappa ricostruisce come lo sguardo cartografico è cambiato dal 1492 a oggi, e come tutte queste storie arrivano a un unico territorio: Gaza tra il 2023 e il 2026. È costruita come un sistema GIS: strati sovrapposti, ognuno dedicato a una categoria.',
+    f: () => FREE, cam: () => framing(allPts(), 45, 28, 1.02) },
+  { k: 'La forma', t: 'Ogni strato ha la forma della Striscia',
+    p: 'Tutti gli strati ritagliano lo stesso contorno: la Striscia di Gaza. Il territorio non è solo l’argomento della mappa, è il supporto su cui l’intera storia della cartografia viene proiettata.',
+    f: () => ({ ...FREE, labels: [] }), cam: () => framing(layerPts(0).concat(layerPts(5)), 90, 62, 0.95) },
+  { k: 'Il tempo', t: 'Da Rafah a Beit Hanoun: 1492 → 2026',
+    p: 'L’asse lungo della Striscia diventa una linea del tempo: il 1492 sta a sud, verso Rafah, il 2026 a nord, verso Beit Hanoun. Il tempo non è in scala: gli ultimi decenni occupano più spazio perché sono i più densi di eventi.',
+    f: () => ({ layers: [5], threads: [], nodes: [], labels: [], plumb: false, ticks: true }), cam: () => framing(layerPts(5), 70, 22, 0.78, -20) },
+  ...[0, 1, 2, 3, 4].map(L => ({
+    k: `Strato ${String(L + 1).padStart(2, '0')}`, t: LAYER[L].name.charAt(0) + LAYER[L].name.slice(1).toLowerCase(),
+    p: [
+      'Gli strumenti che catturano e misurano lo spazio e lo trasformano in dato: fotografia aerea, satelliti, GIS e layer, GPS, Google Maps, Street View, Apple Mappe. Ogni tecnologia cambia ciò che è possibile vedere.',
+      'Proiezioni, convenzioni e linguaggi visivi: da Mercatore a Gall-Peters, Robinson ed Equal Earth fino a Correct the Map, insieme alle contro-visualizzazioni di Du Bois e del Decolonial Atlas. Disegnare il mondo è sempre una scelta.',
+      'Conquistare, dividere, amministrare, sorvegliare, colpire: espansione e cartografia coloniale, Sykes-Picot e la Partizione, guerre, regolazione delle immagini, cloud e intelligenza artificiale militare. È lo strato più denso di eventi su Gaza.',
+      'Come immagini e mappe cambiano il modo di vedere e ricordare: le foto aeree di Auschwitz lette da Farocki, Earthrise, le dashboard della pandemia, Dollar Street, Palestine Open Maps, gli Zuni, The Zionverse. Qui stanno anche i concetti dell’Antropocene.',
+      'Navigare, contribuire, contestare, giocare, investigare: stick charts delle Isole Marshall e Maldhari, OpenStreetMap, counter-mapping, mappe indigene, Queering the Map, GeoGuessr, Forensic Architecture. La mappa come azione, non solo come immagine.',
+    ][L],
+    f: () => ({ layers: [L], threads: [], nodes: inLayer(L), labels: inLayer(L), plumb: false, mini: true }),
+    cam: () => framing(layerPts(L), 78, 55, 0.98),
+  })),
+  { k: 'Strato 00', t: 'Gaza 2023–2026: il territorio',
+    p: 'Lo strato più basso è il territorio reale, ricoperto da due immagini satellitari diverse della stessa Striscia, divise dalla linea tratteggiata. Uno stesso luogo esiste insieme come immagine satellitare, piattaforma commerciale, archivio storico, database investigativo, spazio vissuto e costruzione mediatica.',
+    f: () => ({ layers: [5], threads: [], nodes: [HUB], labels: [HUB], plumb: false }), cam: () => framing(layerPts(5), 50, 50, 0.85) },
+  { k: 'Filo 1 di 4', t: 'Vedere Gaza dall’alto',
+    p: sw('view') + 'Dalla fotografia aerea della Prima guerra mondiale a Sputnik, Landsat e la Guerra del Golfo: lo sguardo verticale nasce militare. L’emendamento Kyl-Bingaman ha tenuto per oltre vent’anni le immagini di Israele e dei Territori palestinesi a bassa risoluzione, e dal 2023 le immagini commerciali di Gaza vengono oscurate o ritardate.',
+    f: () => ({ layers: null, threads: ['view'], nodes: inThread('view'), labels: inThread('view'), plumb: false }), cam: () => framing(ptsOf(inThread('view')), 35, 24, 0.95) },
+  { k: 'Filo 2 di 4', t: 'Confini e potere sulla Palestina',
+    p: sw('border') + 'Dalla cartografia coloniale alla Conferenza di Berlino, da Sykes-Picot alla Partizione: i confini vengono tracciati sulla carta prima che sul terreno. Oggi lo stesso potere passa dalla geospatial intelligence, dal cloud di Project Nimbus, dal GPS jamming e dai sistemi di puntamento The Gospel e Lavender.',
+    f: () => ({ layers: null, threads: ['border'], nodes: inThread('border'), labels: inThread('border'), plumb: false }), cam: () => framing(ptsOf(inThread('border')), 60, 24, 0.95) },
+  { k: 'Filo 3 di 4', t: 'Contro-mappe: rendere visibile Gaza',
+    p: sw('back') + 'Da Du Bois alla decolonizzazione, dal counter-mapping a OpenStreetMap, da Palestine Open Maps a Forensic Architecture e The Zionverse: usare gli strumenti della mappa per rendere visibile ciò che le mappe ufficiali cancellano.',
+    f: () => ({ layers: null, threads: ['back'], nodes: inThread('back'), labels: inThread('back'), plumb: false }), cam: () => framing(ptsOf(inThread('back')), 25, 26, 0.95) },
+  { k: 'Filo 4 di 4 · caso studio', t: 'Da Google Maps ad Apple Mappe',
+    p: sw('platform') + 'Dal GIS alla mappa a strati, dallo Stato alla piattaforma: con Google Maps, Street View e Apple Mappe la cartografia diventa un servizio privato. #PalestineIsHere nel 2016, il traffico in tempo reale spento nel 2023 e il temporal mismatch del 2026 mostrano che cosa una piattaforma decide di far vedere.',
+    f: () => ({ layers: null, threads: ['platform'], nodes: inThread('platform'), labels: inThread('platform'), plumb: false }), cam: () => framing(ptsOf(inThread('platform')), 48, 26, 0.9) },
+  { k: 'Caso studio', t: 'Temporal mismatch',
+    p: 'Nel 2026 su una piattaforma la città appare distrutta, sull’altra ancora intatta. La mappa non mostra il presente, ma la data dell’ultima immagine disponibile: chi decide quando aggiornarla decide anche che cosa, di Gaza, esiste ancora.',
+    f: () => { const m = one('mismatch'); return { layers: [1, 5], threads: ['platform'], nodes: [m, HUB, one('apple'), one('palestineishere')], labels: [m, HUB], plumb: true }; },
+    cam: () => { const m = nodes[one('mismatch')]; return framing([P3(m), W(m.u, m.v, topY(5)), P3(nodes[HUB]), W(m.u - 300, m.v, topY(5))], 55, 26, 1.15); } },
+  { k: 'Ricadute', t: 'I fili a piombo',
+    p: 'Le linee verticali gialle proiettano sul territorio gli eventi che riguardano direttamente la Palestina: Sykes-Picot, la Partizione, Kyl-Bingaman, Nimbus, Lavender, Palestine Open Maps, Forensic Architecture. Ogni strato, prima o poi, cade su Gaza.',
+    f: () => { const p = nodes.filter(n => n.pal).map(n => n.i); return { layers: null, threads: [], nodes: p, labels: p, plumb: true, mini: true }; },
+    cam: () => framing(nodes.filter(n => n.pal).map(P3).concat(layerPts(5).slice(8, 16)), 15, 12, 0.9) },
+  { k: 'Antropocene', t: 'La mappa che trasforma la Terra',
+    p: 'Con T.J. Demos lo sguardo si sposta: le immagini dall’alto non solo rappresentano il pianeta, contribuiscono a trasformarlo. Secondo la tesi dell’Orbis spike l’Antropocene comincia nel 1492, con la conquista: la stessa data da cui parte questa mappa.',
+    f: () => { const c = nodes.filter(n => n.concept).map(n => n.i).concat([one('espansione'), one('earthrise')]); return { layers: [2, 3], threads: [], nodes: c, labels: c, plumb: false }; },
+    cam: () => framing(layerPts(3).slice(0, 12).concat(ptsOf(nodes.filter(n => n.concept).map(n => n.i))), 70, 40, 0.8) },
+  { k: 'Convergenza', t: 'Tutti i fili arrivano a Gaza',
+    p: 'Tecnologia, rappresentazione, politica, cultura e pratiche scendono strato dopo strato fino a un unico punto: Gaza City. Qui il territorio è insieme bersaglio, immagine, dato e memoria.',
+    f: () => ({ layers: null, threads: null, nodes: null, labels: [HUB], plumb: true }), cam: () => { const h = P3(nodes[HUB]); return framing([h, h.clone().add(new THREE.Vector3(0, state.gap * 5.2, 0)), h.clone().add(new THREE.Vector3(-500, 0, 0))], 10, 10, 1.0); } },
+];
 
 
-document.querySelectorAll('[data-thread]').forEach(b => b.onclick = () => {
-  const k = b.dataset.thread; TH[k].on = !TH[k].on; b.setAttribute('aria-pressed', TH[k].on);
-});
+const tourEl = document.getElementById('tour'), prev = document.getElementById('prev'), next = document.getElementById('next');
+const btn = document.getElementById('explore'), btnTxt = document.getElementById('exploreTxt');
+function go(i) {
+  i = Math.max(0, Math.min(STEPS.length - 1, i)); state.step = i;
+  const s = STEPS[i];
+  const body = tourEl.querySelector('.body'); body.style.opacity = 0;
+  setTimeout(() => {
+    document.getElementById('tk').textContent = s.k;
+    document.getElementById('tn').textContent = `${i + 1} / ${STEPS.length}`;
+    document.getElementById('tt').textContent = s.t;
+    document.getElementById('tp').innerHTML = s.p;
+    body.style.opacity = 1;
+  }, 160);
+  document.querySelector('#prog i').style.width = `${(i + 1) / STEPS.length * 100}%`;
+  prev.disabled = i === 0; next.disabled = i === STEPS.length - 1;
+  state.gapT = s.gap ?? GAP;
+  const cam = withGap(state.gapT, s.cam);
+  const f = { ...s.f() }; f.bands = true; if (i === 2) f.ticks = true; if (i === 2 || i === 8) f.cities = true;
+  setFocus(f); flyTo(cam, 1700); hideTip();
+}
+function startTour() { state.touring = true; btnTxt.textContent = 'Esci'; tourEl.classList.add('on'); prev.classList.add('on'); next.classList.add('on'); go(0); }
+function endTour() {
+  state.touring = false; btnTxt.textContent = 'Esplora'; tourEl.classList.remove('on'); prev.classList.remove('on'); next.classList.remove('on');
+  state.gapT = GAP; setFocus(FREE); flyTo(HOME(), 1500);
+}
+btn.onclick = () => state.touring ? endTour() : startTour();
+prev.onclick = () => go(state.step - 1); next.onclick = () => go(state.step + 1);
 
-// ---------- picking
+// ---------------------------------------------------------------- hover captions
+const tip = document.getElementById('tip');
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
-let hovered = null, down = null, hoverImg = null;
-const link = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(1, 0, 0)]), new THREE.LineDashedMaterial({ color: 0x141414, dashSize: 6, gapSize: 5, transparent: true, opacity: 0, depthTest: false }));
-link.renderOrder = 9; scene.add(link);
+let hoverKey = null;
+function rectAt(L, u, v) { return D.rects.find(r => r.L === L && u >= r.u0 && u <= r.u1 && v >= r.v0 && v <= r.v1); }
 function pick(ev) {
-  mouse.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1);
+  mouse.set(ev.clientX / innerWidth * 2 - 1, -ev.clientY / innerHeight * 2 + 1);
   ray.setFromCamera(mouse, camera);
-  const hit = ray.intersectObjects(cards.filter(k => k.show > 0.5).map(k => k.mesh).concat(cards.map(k => k.node), images.map(i => i.mesh)), false)[0];
-  return hit ? hit.object : null;
+  const sh = ray.intersectObjects(nodes.filter(n => n.op > 0.4).map(n => n.sp));
+  if (sh.length) return { node: nodes[sh[0].object.userData.n] };
+  const lh = ray.intersectObjects(layers.filter(l => l.op > 0.5).map(l => l.mesh));
+  for (const h of lh) {
+    if (h.face.normal.y < 0.5) return null;              // hit a wall first
+    const L = h.object.userData.L; const u = h.uv.x * WT, v = (1 - h.uv.y) * DEP;
+    const r = rectAt(L, u, v);
+    if (r) return { rect: r, node: nodes[r.node] };
+    return null;
+  }
+  return null;
 }
+function capHTML(n) {
+  return (n.chip ? `<span class="tag">${n.chip}</span><br>` : '') + `<div class="d">${n.pal ? '<span class="pal"></span>' : ''}${n.date}</div><div class="t">${n.title}</div>` + (n.body ? `<div class="b">${n.body}</div>` : '');
+}
+function showTip(hit, ev) {
+  const key = hit.rect ? 'r' + hit.rect.img : 'n' + hit.node.i;
+  if (key !== hoverKey) {
+    hoverKey = key; tip.innerHTML = capHTML(hit.node);
+    if (hit.rect) {
+      const r = hit.rect, y = topY(r.L) + 1.5;
+      hoverBox.geometry.dispose(); hoverBox.geometry = new THREE.BufferGeometry().setFromPoints([W(r.u0, r.v0, y), W(r.u1, r.v0, y), W(r.u1, r.v1, y), W(r.u0, r.v1, y)]);
+      hoverBox.userData.opT = 1;
+    } else hoverBox.userData.opT = 0;
+  }
+  const w = 280, h = tip.offsetHeight || 140;
+  let x = ev.clientX + 18, y = ev.clientY + 18;
+  if (x + w > innerWidth - 12) x = ev.clientX - w - 18;
+  if (y + h > innerHeight - 12) y = ev.clientY - h - 18;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.classList.add('on');
+}
+function hideTip() { hoverKey = null; tip.classList.remove('on'); hoverBox.userData.opT = 0; }
 renderer.domElement.addEventListener('pointermove', ev => {
-  const o = pick(ev);
-  hoverImg = o && o.userData.kind === 'img' ? o : null;
-  hovered = !o ? null : o.userData.kind === 'img' ? (byId[D.img2card[o.userData.im.id]] || null) : o.userData.k;
-  renderer.domElement.style.cursor = o ? (o.userData.kind === 'img' ? 'zoom-in' : 'pointer') : 'grab';
+  if (state.intro || ev.buttons) { hideTip(); return; }
+  const hit = pick(ev);
+  if (hit && hit.node) { showTip(hit, ev); renderer.domElement.style.cursor = 'pointer'; }
+  else { hideTip(); renderer.domElement.style.cursor = 'grab'; }
 });
+renderer.domElement.addEventListener('pointerleave', hideTip);
+let down = null;
 renderer.domElement.addEventListener('pointerdown', ev => down = [ev.clientX, ev.clientY]);
 renderer.domElement.addEventListener('pointerup', ev => {
-  if (!down || Math.hypot(ev.clientX - down[0], ev.clientY - down[1]) > 5) return;
-  const o = pick(ev); if (!o) return;
-  if (o.userData.kind === 'img') { lbImg.src = o.userData.im.file; lb.classList.add('on'); return; }
-  const K = o.userData.k, p = K.mesh.position.clone();
-  if (e < 0.5) { flyTo(new THREE.Vector3(p.x, 700, p.z + 1), p.clone()); return; }
-  const dir = camera.position.clone().sub(p); dir.y = 0; dir.normalize();
-  flyTo(p.clone().add(dir.multiplyScalar(Math.max(K.w, K.h * 1.6) * 2.4)).add(new THREE.Vector3(0, 30, 0)), p.clone());
-  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', false));
+  if (state.intro || !down || Math.hypot(ev.clientX - down[0], ev.clientY - down[1]) > 5) return;
+  const hit = pick(ev); if (hit && hit.node) openLB(hit.node, hit.rect ? hit.rect.file : null);
 });
-const lb = document.getElementById('lightbox'), lbImg = document.getElementById('lbImg');
+const lb = document.getElementById('lightbox');
+function openLB(n, file) {
+  const imgs = n.imgs.length ? n.imgs : (file ? [file] : []);
+  const im = lb.querySelector('img');
+  if (imgs.length) { im.src = file || imgs[0]; im.style.display = ''; } else im.style.display = 'none';
+  lb.querySelector('.cap').innerHTML = capHTML(n).replace('class="b"', 'class="b"') +
+    (imgs.length > 1 ? `<div class="thumbs">${imgs.map(s => `<img src="${s}" alt="" class="${s === im.src.split('/').slice(-2).join('/') || s === (file || imgs[0]) ? 'on' : ''}">`).join('')}</div>` : '');
+  lb.querySelectorAll('.thumbs img').forEach(t => t.onclick = e => { e.stopPropagation(); im.src = t.getAttribute('src'); lb.querySelectorAll('.thumbs img').forEach(x => x.classList.toggle('on', x === t)); });
+  lb.classList.add('on'); hideTip();
+}
 lb.onclick = () => lb.classList.remove('on');
-addEventListener('keydown', ev => { if (ev.key === 'Escape') lb.classList.remove('on'); });
+addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') { if (lb.classList.contains('on')) lb.classList.remove('on'); else if (state.touring) endTour(); }
+  if (state.touring && ev.key === 'ArrowRight') go(state.step + 1);
+  if (state.touring && ev.key === 'ArrowLeft') go(state.step - 1);
+});
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); });
+controls.addEventListener('start', () => { anim = null; hideTip(); });
 
-// ---------- loop
-const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-let last = performance.now();
-function tick(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  // explode when the map is tilted, recompose when seen from above
-  const pol = controls.getPolarAngle();
-  eTarget = THREE.MathUtils.clamp((pol - 0.12) / 0.55, 0, 1);
-  if (e !== eTarget) {
-    if (reduce) e = eTarget;
-    else { const sp = 1.1; e = eTarget > e ? Math.min(eTarget, e + dt * sp) : Math.max(eTarget, e - dt * sp); }
+// ---------------------------------------------------------------- intro: Palestine explodes into layers
+let introT0 = 0;
+const STACK = 12;                       // layers piled into one block
+function setIntroY(t) {
+  for (let L = 0; L < 6; L++) {
+    if (L === 5) { introY[5] = 0; continue; }
+    const k = Math.max(0, Math.min(1, (t - L * 0.07) / 0.72));   // top layer leaves first
+    const e = ease(k);
+    const y0 = THICK(5) + 1 + (4 - L) * STACK; introY[L] = y0 + e * ((5 - L) * GAP - y0);
   }
-  for (const K of cards) K.show += ((K === hovered ? 1 : 0) - K.show) * (reduce ? 1 : 0.22);
-  if (fly) {
-    const t = Math.min(1, (now - fly.t0) / fly.ms), q = ease(t);
-    camera.position.lerpVectors(fly.p0, fly.p1, q); controls.target.lerpVectors(fly.q0, fly.q1, q);
-    if (t >= 1) fly = null;
+}
+function ready() {
+  setIntroY(0); rebuild(false);
+  const blockPts = []; for (let L = 0; L < 6; L++) G.poly.forEach(([u, v]) => blockPts.push(W(u, v, introY[L] + THICK(L))));
+  const start = framing(blockPts, 45, 34, 0.72, 0, 0);
+  camera.position.copy(start.pos); controls.target.copy(start.tgt); controls.update();
+  const l = document.getElementById('loader'); l.style.opacity = 0; setTimeout(() => l.remove(), 900);
+  introT0 = performance.now() + 1900;
+  setTimeout(() => flyTo(HOME(), 3600), 2000);
+}
+function introUpdate(now) {
+  const t = Math.max(0, Math.min(1, (now - introT0) / 3400));
+  setIntroY(t);
+  if (t >= 1) {
+    state.intro = false; state.gap = state.gapT = GAP; controls.enabled = true; btn.disabled = false;
+    rebuild(true); setFocus(FREE);
   }
-  controls.update();
-  layout();
-  if (hoverImg && hovered) {
-    const top = hoverImg.localToWorld(new THREE.Vector3(0, hoverImg.userData.im.h / 2, 0));
-    link.geometry.setFromPoints([top, hovered.node.position.clone()]); link.computeLineDistances();
-    link.material.opacity = Math.min(0.8, hovered.show); link.visible = true;
-  } else link.visible = false;
-  renderer.render(scene, camera); labelR.render(scene, camera);
-  requestAnimationFrame(tick);
 }
 
-// ---------- start: flat map seen from above, then it explodes
-(async () => {
-  try { await Promise.all([document.fonts.load('700 10px "IBM Plex Mono"'), document.fonts.load('500 10px "IBM Plex Mono"'), document.fonts.load('400 10px Inter')]); } catch (_) {}
-  buildCards(); buildThreads(); buildWall();
-  const [p, t] = VIEWS.top; camera.position.set(...p); controls.target.set(...t);
-  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === 'top'));
+// ---------------------------------------------------------------- loop
+const lerp = (a, b, k) => a + (b - a) * k;
+function tick(now) {
   requestAnimationFrame(tick);
-  const ld = document.getElementById('loader'); ld.style.opacity = 0; setTimeout(() => ld.remove(), 700);
-})();
+  if (pending > 0) return;
+  if (anim) {
+    const t = Math.min(1, (now - anim.s) / anim.ms), e = ease(t);
+    camera.position.lerpVectors(anim.p0, anim.p1, e); controls.target.lerpVectors(anim.t0, anim.t1, e);
+    if (t >= 1) anim = null;
+  }
+  if (state.intro) { introUpdate(now); rebuild(false); }
+  else if (Math.abs(state.gap - state.gapT) > 0.5) { state.gap = lerp(state.gap, state.gapT, 0.08); rebuild(true); }
+  const k = 0.08;
+  layers.forEach(l => {
+    if (!state.intro) l.op = lerp(l.op, l.opT, k);
+    l.topM.opacity = l.op; l.sideM.opacity = l.op; l.edgeM.opacity = .35 * l.op; l.grp.visible = l.op > 0.02;
+  });
+  threads.forEach(t => { t.op = lerp(t.op, t.opT, k); t.m.opacity = t.op; if (t.casing) t.mc.opacity = t.op; t.mesh.visible = t.op > 0.01; if (t.casing) t.casing.visible = t.op > 0.01; });
+  nodes.forEach(n => { n.op = lerp(n.op, n.opT, k); n.mat.opacity = n.op; });
+  plumbM.opacity = lerp(plumbM.opacity, state.intro ? 0 : (plumbM.userData.opT ?? .9), k);
+  plumbDots.forEach(d => d.sp.material.opacity = plumbM.opacity);
+  hoverBox.material.opacity = lerp(hoverBox.material.opacity, hoverBox.userData.opT || 0, 0.25);
+  controls.update();
+  renderer.render(scene, camera); labelR.render(scene, camera);
+}
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>
