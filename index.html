@@ -17,8 +17,8 @@ body{background:radial-gradient(120% 90% at 50% 40%,#FDFDFB 0%,#F3F3EF 60%,#E9E9
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
 button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
-#explore{position:fixed;top:24px;left:24px;z-index:20;background:var(--ink);color:#fff;border-radius:999px;padding:12px 24px;font-size:14px;font-weight:600;letter-spacing:.01em;display:flex;align-items:center;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);transition:transform .25s,opacity .6s,background .2s}
-#explore:hover{transform:translateY(-1px);background:#000}
+#explore{position:fixed;top:24px;left:24px;z-index:20;background:rgba(255,255,255,.96);color:#141414;border:.6px solid #141414;border-radius:0;padding:9px 14px 9px;font-family:var(--sans);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;display:flex;align-items:center;gap:8px;transition:opacity .6s,background .2s,color .2s}
+#explore:hover{background:#141414;color:#fff}
 #explore .ic{width:8px;height:8px;border-radius:50%;background:var(--gaza);box-shadow:0 0 0 3px rgba(242,209,58,.25)}
 #explore[disabled]{opacity:0;pointer-events:none}
 
@@ -33,18 +33,18 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 #tip .pal{display:none}
 
 /* tour */
-#tour{position:fixed;left:24px;bottom:24px;z-index:12;width:min(440px,calc(100vw - 48px));background:rgba(255,255,255,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:20px;padding:20px 22px 18px;box-shadow:0 18px 60px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .45s,transform .45s}
+#tour{position:fixed;left:24px;bottom:24px;z-index:12;width:min(400px,calc(100vw - 48px));background:rgba(255,255,255,.96);border:.6px solid #141414;padding:11px 13px 13px;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .45s,transform .45s}
 #tour.on{opacity:1;transform:none;pointer-events:auto}
-#tour .k{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;font-weight:500;color:#6B6B6B;letter-spacing:.06em;text-transform:uppercase}
-#tour h2{margin:8px 0 8px;font-size:22px;line-height:1.15;font-weight:700;letter-spacing:-.02em}
-#tour p{margin:0;font-size:14px;line-height:1.55;color:var(--ink2)}
-#tour .sw{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:8px}
+#tour .k{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;font-weight:400;color:#6B6B6B;letter-spacing:.02em;text-transform:uppercase}
+#tour h2{margin:4px 0 7px;font-family:var(--sans);font-size:12.5px;line-height:1.25;font-weight:700;text-transform:uppercase;color:#141414}
+#tour p{margin:0;font-family:var(--sans);font-size:12px;line-height:1.5;color:#2A2A2A}
+#tour .sw{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:7px}
 #tour .body{transition:opacity .3s}
-#prog{height:3px;background:rgba(0,0,0,.08);border-radius:3px;margin-top:16px;overflow:hidden}
-#prog i{display:block;height:100%;background:var(--ink);border-radius:3px;transition:width .5s}
-.arrow{position:fixed;top:50%;z-index:12;width:52px;height:52px;margin-top:-26px;border-radius:50%;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s,background .2s,transform .2s}
+#prog{height:2px;background:#E2E2DE;margin-top:12px;overflow:hidden}
+#prog i{display:block;height:100%;background:#141414;transition:width .5s}
+.arrow{position:fixed;top:50%;z-index:12;width:40px;height:40px;margin-top:-20px;background:rgba(255,255,255,.96);border:.6px solid #141414;border-radius:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s,background .2s}
 .arrow.on{opacity:1;pointer-events:auto}
-.arrow:hover{background:var(--ink);transform:scale(1.05)}
+.arrow:hover{background:#141414}
 .arrow:hover path{stroke:#fff}
 .arrow[disabled]{opacity:.25!important;pointer-events:none}
 #prev{left:24px} #next{right:24px}
@@ -57,8 +57,8 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 .city{font-family:var(--mono);font-size:8.8px;font-weight:700;background:#141414;color:var(--gaza);padding:2px 5px}
 .tick{font-family:var(--mono);font-size:10px;font-weight:400}
 .band{font-family:var(--sans);line-height:1}
-.band .c{display:block;font-family:var(--mono);font-size:10px;font-weight:500;color:#141414;margin-bottom:3px}
-.band .n{display:block;font-size:19px;font-weight:700;letter-spacing:-.005em}
+.band .c{display:block;font-family:var(--mono);font-size:8.5px;font-weight:400;color:#141414;margin-bottom:2px}
+.band .n{display:block;font-size:11.5px;font-weight:700;letter-spacing:.01em}
 .city.on,.tick.on,.band.on{opacity:1}
 
 #lightbox{position:fixed;inset:0;z-index:30;background:rgba(246,246,243,.86);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;gap:28px;padding:40px;opacity:0;pointer-events:none;transition:opacity .3s;cursor:zoom-out}
@@ -84,9 +84,9 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 #loader{position:fixed;inset:0;z-index:40;background:#F6F6F3;transition:opacity .8s}
 
 @media (max-width:820px){
-  #tour{left:12px;right:12px;bottom:12px;width:auto;padding:16px 16px 14px}
-  #tour h2{font-size:18px} #tour p{font-size:13px}
-  .arrow{top:40%;width:44px;height:44px} #prev{left:10px} #next{right:10px}
+  #tour{left:12px;right:12px;bottom:12px;width:auto;padding:10px 12px 12px}
+  #tour h2{font-size:12px} #tour p{font-size:11.5px}
+  .arrow{top:40%;width:38px;height:38px} #prev{left:10px} #next{right:10px}
   #tip{display:none}
   #lightbox{flex-direction:column;gap:16px;overflow:auto} #lightbox img{max-width:90vw;max-height:50vh} #lightbox .cap{width:auto;max-width:90vw}
 }
@@ -109,8 +109,8 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
   <div class="body"><div class="k"><span id="tk"></span><span id="tn"></span></div><h2 id="tt"></h2><p id="tp"></p></div>
   <div id="prog"><i></i></div>
 </section>
-<button class="arrow" id="prev" aria-label="Passo precedente"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M11 3.5L5.5 9L11 14.5" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-<button class="arrow" id="next" aria-label="Passo successivo"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M7 3.5L12.5 9L7 14.5" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button class="arrow" id="prev" aria-label="Passo precedente"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M11 3.5L5.5 9L11 14.5" fill="none" stroke="#111" stroke-width="1.3" stroke-linecap="square" stroke-linejoin="miter"/></svg></button>
+<button class="arrow" id="next" aria-label="Passo successivo"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M7 3.5L12.5 9L7 14.5" fill="none" stroke="#111" stroke-width="1.3" stroke-linecap="square" stroke-linejoin="miter"/></svg></button>
 <div id="lightbox" role="dialog" aria-label="Immagine"><img alt=""><div class="cap"></div></div>
 
 <script type="module">
