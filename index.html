@@ -6,7 +6,7 @@
 <title>Mappare la realtà</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#111;--ink2:#3a3a3a;--g1:#8a8a86;--paper:#F6F6F3;--gaza:#F2D13A;--sans:'Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
 *{box-sizing:border-box}
@@ -23,18 +23,19 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 #explore[disabled]{opacity:0;pointer-events:none}
 
 /* hover caption */
-#tip{position:fixed;left:0;top:0;z-index:15;pointer-events:none;width:280px;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:14px;padding:12px 14px 13px;box-shadow:0 12px 40px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s}
+#tip{position:fixed;left:0;top:0;z-index:15;pointer-events:none;width:270px;background:rgba(255,255,255,.96);border:.6px solid #141414;padding:9px 11px 11px;opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s}
 #tip.on{opacity:1;transform:none}
-#tip .d{font-family:var(--mono);font-size:10.5px;color:var(--g1);letter-spacing:.02em}
-#tip .t{font-weight:700;font-size:14px;line-height:1.25;margin:3px 0 6px}
-#tip .b{font-size:12.5px;line-height:1.45;color:var(--ink2)}
-#tip .tag{display:inline-block;font-size:10px;font-weight:600;background:#111;color:#fff;border-radius:999px;padding:2px 8px;margin-bottom:6px}
-#tip .pal{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gaza);margin-right:6px;vertical-align:1px}
+#tip.pal{border-left:3px solid var(--gaza)}
+#tip .d{font-family:var(--mono);font-size:9px;color:#6B6B6B}
+#tip .t{font-family:var(--sans);font-weight:700;font-size:11px;text-transform:uppercase;line-height:1.25;margin:3px 0 6px;color:#141414}
+#tip .b{font-family:var(--sans);font-size:11.5px;line-height:1.45;color:#2A2A2A}
+#tip .tag{display:inline-block;font-family:var(--mono);font-size:8px;font-weight:700;background:#141414;color:#fff;padding:1px 5px;margin:-9px 0 6px -11px}
+#tip .pal{display:none}
 
 /* tour */
 #tour{position:fixed;left:24px;bottom:24px;z-index:12;width:min(440px,calc(100vw - 48px));background:rgba(255,255,255,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:20px;padding:20px 22px 18px;box-shadow:0 18px 60px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .45s,transform .45s}
 #tour.on{opacity:1;transform:none;pointer-events:auto}
-#tour .k{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;color:var(--g1);letter-spacing:.02em}
+#tour .k{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;font-weight:500;color:#6B6B6B;letter-spacing:.06em;text-transform:uppercase}
 #tour h2{margin:8px 0 8px;font-size:22px;line-height:1.15;font-weight:700;letter-spacing:-.02em}
 #tour p{margin:0;font-size:14px;line-height:1.55;color:var(--ink2)}
 #tour .sw{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:8px}
@@ -49,13 +50,15 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 #prev{left:24px} #next{right:24px}
 
 /* in-tour labels */
-.lab{font-size:10.5px;font-weight:600;line-height:1.2;background:rgba(255,255,255,.94);border-radius:999px;padding:4px 9px 5px;box-shadow:0 2px 10px rgba(0,0,0,.1);white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .35s;pointer-events:none}
-.lab.pal::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gaza);margin-right:5px;vertical-align:1px;box-shadow:0 0 0 1px #111}
+.lab{font-family:var(--sans);font-size:9.5px;font-weight:700;text-transform:uppercase;line-height:1.2;background:rgba(255,255,255,.93);border:.6px solid #141414;padding:3px 6px 4px;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .35s;pointer-events:none;color:#141414}
+.lab.pal{border-left:2.6px solid var(--gaza)}
 .lab.on{opacity:1}
-.city,.tick,.band{font-size:10.5px;font-weight:600;white-space:nowrap;opacity:0;transition:opacity .4s;pointer-events:none}
-.city{background:#111;color:var(--gaza);border-radius:999px;padding:3px 8px}
-.tick{font-family:var(--mono);background:#111;color:#fff;border-radius:999px;padding:3px 8px}
-.band{background:rgba(255,255,255,.9);border-radius:999px;padding:4px 10px;letter-spacing:.06em;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.city,.tick,.band{white-space:nowrap;opacity:0;transition:opacity .4s;pointer-events:none;color:#141414}
+.city{font-family:var(--mono);font-size:8.8px;font-weight:700;background:#141414;color:var(--gaza);padding:2px 5px}
+.tick{font-family:var(--mono);font-size:10px;font-weight:400}
+.band{font-family:var(--sans);line-height:1}
+.band .c{display:block;font-family:var(--mono);font-size:10px;font-weight:500;color:#141414;margin-bottom:3px}
+.band .n{display:block;font-size:19px;font-weight:700;letter-spacing:-.005em}
 .city.on,.tick.on,.band.on{opacity:1}
 
 #lightbox{position:fixed;inset:0;z-index:30;background:rgba(246,246,243,.86);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;gap:28px;padding:40px;opacity:0;pointer-events:none;transition:opacity .3s;cursor:zoom-out}
@@ -70,13 +73,13 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 #lightbox .thumbs img.on{opacity:1;outline:2px solid #111}
 
 
-#compass{position:fixed;top:22px;right:24px;z-index:14;width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 28px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.05);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s,transform .2s}
-#compass:hover{transform:scale(1.06)}
-#compass svg{transition:none}
-#scale{position:fixed;right:24px;bottom:24px;z-index:14;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:999px;box-shadow:0 8px 28px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.05);padding:9px 16px 8px;display:flex;align-items:center;gap:10px;font-size:11px;font-weight:600;opacity:0;transition:opacity .6s;pointer-events:none}
-#scale .bar{height:6px;display:flex;border:1.2px solid #111;border-radius:1px;transition:width .25s}
-#scale .bar i{flex:1;background:#111}
+#compass{position:fixed;top:16px;right:20px;z-index:14;width:64px;height:64px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s}
+#scale{position:fixed;right:28px;bottom:26px;z-index:14;opacity:0;transition:opacity .6s;pointer-events:none;font-family:var(--mono);font-size:9.5px;color:#141414;text-align:right}
+#scale .bar{height:6px;display:flex;margin-left:auto;transition:width .25s}
+#scale .bar i{flex:1;background:#141414;border:.8px solid #141414}
 #scale .bar i:nth-child(2n){background:#fff}
+#scale .lbl{display:flex;justify-content:space-between;margin-top:5px}
+#scale .sub{font-size:8.5px;color:#6B6B6B;margin-top:3px}
 .ui-on #compass,.ui-on #scale{opacity:1}
 #loader{position:fixed;inset:0;z-index:40;background:#F6F6F3;transition:opacity .8s}
 
@@ -100,8 +103,8 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 <div id="loader"></div>
 <button id="explore" disabled><span id="exploreTxt">Esplora</span></button>
 <div id="tip" role="tooltip"></div>
-<button id="compass" aria-label="Bussola: clicca per orientare la mappa con il nord in alto"><svg id="needle" width="30" height="30" viewBox="-15 -15 30 30"><path d="M0 -13 L5 1 L0 -2 L-5 1 Z" fill="#111"/><path d="M0 13 L5 -1 L0 2 L-5 -1 Z" fill="#c9c9c4"/><text x="0" y="-6.5" text-anchor="middle" font-size="0" fill="#fff">N</text></svg></button>
-<div id="scale" aria-label="Scala"><div class="bar"><i></i><i></i><i></i><i></i></div><span id="scaleTxt">5 km</span></div>
+<button id="compass" aria-label="Bussola: clicca per orientare la mappa con il nord in alto"><svg width="64" height="64" viewBox="-32 -32 64 64" style="overflow:visible"><g id="needle"><path d="M-10 14 L0 -14 L10 14 L0 7 Z" fill="#141414"/></g><text id="nLetter" x="0" y="-19" text-anchor="middle" dominant-baseline="middle" font-family="Inter, sans-serif" font-weight="700" font-size="14" fill="#141414">N</text></svg></button>
+<div id="scale" aria-label="Scala"><div class="bar"><i></i><i></i><i></i><i></i><i></i></div><div class="lbl"><span>0</span><span id="scaleTxt">5 km</span></div></div>
 <section id="tour" aria-live="polite">
   <div class="body"><div class="k"><span id="tk"></span><span id="tn"></span></div><h2 id="tt"></h2><p id="tp"></p></div>
   <div id="prog"><i></i></div>
@@ -174,7 +177,7 @@ for (let L = 0; L < 6; L++) {
   const mesh = new THREE.Mesh(geo, [topM, sideM]); mesh.userData.L = L;
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), new THREE.LineBasicMaterial({ color: 0x141414, transparent: true, opacity: .35 }));
   const grp = new THREE.Group(); grp.add(mesh, edges); scene.add(grp);
-  const el = document.createElement('div'); el.className = 'band'; el.textContent = `${LAYER[L].code} · ${LAYER[L].name}`;
+  const el = document.createElement('div'); el.className = 'band'; el.innerHTML = `<span class="c">${LAYER[L].code}</span><span class="n">${LAYER[L].name}</span>`;
   const lab = new CSS2DObject(el); lab.center.set(0, 0.5); scene.add(lab);
   layers.push({ grp, mesh, topM, sideM, edgeM: edges.material, lab, el, op: 1, opT: 1 });
 }
@@ -193,6 +196,8 @@ function vMax(u) {
 }
 const ticks = G.ticks.map(([y, u]) => { const el = document.createElement('div'); el.className = 'tick'; el.textContent = y; const o = new CSS2DObject(el); o.center.set(0.5, -0.2); scene.add(o); return { o, el, u, v: vMax(u) + 40 }; });
 
+const tickLine = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x141414, transparent: true, opacity: 0 }));
+scene.add(tickLine);
 // hover outline for images
 const hoverBox = new THREE.LineLoop(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x111111, transparent: true, opacity: 0, depthTest: false }));
 hoverBox.renderOrder = 20; scene.add(hoverBox);
@@ -262,7 +267,9 @@ function rebuild(full) {
   plumbDots.forEach(({ n, sp }) => { const p = P3(n); const b = W(n.u, n.v, topY(5) + 1); arr.push(p.x, p.y, p.z, b.x, b.y, b.z); sp.position.copy(b); });
   plumb.geometry.dispose(); plumb.geometry = new THREE.BufferGeometry(); plumb.geometry.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
   cityLabs.forEach(c => c.o.position.copy(W(c.u, c.v, topY(5))));
-  ticks.forEach(t => t.o.position.copy(W(t.u, t.v, topY(5))));
+  const tk = [];
+  ticks.forEach(t => { const a = W(t.u, t.v - 34, topY(5) - THICK(5) * 0.5), b = W(t.u, t.v - 12, topY(5) - THICK(5) * 0.5); t.o.position.copy(W(t.u, t.v, topY(5) - THICK(5) * 0.5)); tk.push(a.x, a.y, a.z, b.x, b.y, b.z); });
+  tickLine.geometry.dispose(); tickLine.geometry = new THREE.BufferGeometry(); tickLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(tk, 3));
 }
 rebuild(true);
 
@@ -425,7 +432,7 @@ function capHTML(n) {
 function showTip(hit, ev) {
   const key = hit.rect ? 'r' + hit.rect.img : 'n' + hit.node.i;
   if (key !== hoverKey) {
-    hoverKey = key; tip.innerHTML = capHTML(hit.node);
+    hoverKey = key; tip.innerHTML = capHTML(hit.node); tip.classList.toggle('pal', !!hit.node.pal);
     if (hit.rect) {
       const r = hit.rect, y = topY(r.L) + 1.5;
       hoverBox.geometry.dispose(); hoverBox.geometry = new THREE.BufferGeometry().setFromPoints([W(r.u0, r.v0, y), W(r.u1, r.v0, y), W(r.u1, r.v1, y), W(r.u0, r.v1, y)]);
@@ -474,7 +481,7 @@ controls.addEventListener('start', () => { anim = null; hideTip(); });
 
 // ---------------------------------------------------------------- compass + scale
 const NORTH = new THREE.Vector3(G.north[0], 0, G.north[1]).normalize();
-const needle = document.getElementById('needle'), scaleBar = document.querySelector('#scale .bar'), scaleTxt = document.getElementById('scaleTxt');
+const nLetter = document.getElementById('nLetter'), needle = document.getElementById('needle'), scaleBar = document.querySelector('#scale .bar'), scaleTxt = document.getElementById('scaleTxt');
 const _a = new THREE.Vector3(), _b = new THREE.Vector3();
 const toPx = v => [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
 let lastScale = '';
@@ -483,7 +490,7 @@ function updateHUD() {
   _a.copy(p0).project(camera); _b.copy(p0).addScaledVector(NORTH, 200).project(camera);
   const [ax, ay] = toPx(_a), [bx, by] = toPx(_b);
   const ang = Math.atan2(bx - ax, -(by - ay)) * 180 / Math.PI;
-  needle.style.transform = `rotate(${ang}deg)`;
+  needle.setAttribute('transform', `rotate(${ang.toFixed(1)})`); const ra = ang * Math.PI / 180; nLetter.setAttribute('x', (Math.sin(ra) * 23).toFixed(1)); nLetter.setAttribute('y', (-Math.cos(ra) * 23).toFixed(1));
   // km per pixel along the screen horizontal, measured on the ground at the target
   const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0); right.y = 0; right.normalize();
   _b.copy(p0).addScaledVector(right, G.kmUnit).project(camera);
@@ -551,6 +558,7 @@ function tick(now) {
     l.el.style.opacity = l.el.classList.contains('on') ? (l.op > 0.5 ? 1 : 0.3) : 0;
   });
   ticks.forEach(t => t.el.style.opacity = t.el.classList.contains('on') ? (layers[5].op > 0.5 ? 1 : 0.3) : 0);
+  tickLine.material.opacity = ticks[0].el.classList.contains('on') ? (layers[5].op > 0.5 ? 1 : 0.3) : 0;
   updateHUD();
   threads.forEach(t => { t.op = lerp(t.op, t.opT, k); t.m.opacity = t.op; if (t.casing) t.mc.opacity = t.op; t.mesh.visible = t.op > 0.01; if (t.casing) t.casing.visible = t.op > 0.01; });
   nodes.forEach(n => { n.op = lerp(n.op, n.opT, k); n.mat.opacity = n.op; });
